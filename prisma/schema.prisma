@@ -5,3 +5,484 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+// --- ENUMS ---
+
+enum UserRole {
+  SUPER_ADMIN
+  ADMIN
+}
+
+enum MemberStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum KycStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+enum KycDocumentType {
+  AADHAAR
+  PAN
+  PASSPORT
+  VOTER_ID
+  DRIVING_LICENSE
+}
+
+enum BatchStatus {
+  DRAFT
+  RUNNING
+  COMPLETED
+  CANCELLED
+}
+
+enum BatchInstallmentStatus {
+  PENDING
+  ACTIVE
+  COMPLETED
+}
+
+enum EnrollmentStatus {
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum PaymentMethod {
+  CASH
+  UPI
+  BANK_TRANSFER
+}
+
+enum PaymentStatus {
+  COLLECTED
+  PARTIALLY_ALLOCATED
+  FULLY_ALLOCATED
+  REVERSED
+}
+
+enum ReceiptStatus {
+  ACTIVE
+  CANCELLED
+}
+
+enum WithdrawalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  PAID
+  CANCELLED
+}
+
+enum WithdrawalPayoutStatus {
+  PAID
+  REVERSED
+}
+
+enum DocumentType {
+  KYC
+  DECLARATION
+  RECEIPT
+  SIGNED_AGREEMENT
+  OTHER
+}
+
+enum ReminderStatus {
+  PENDING
+  SENT
+  FAILED
+  CANCELLED
+}
+
+enum ReminderType {
+  SMS
+  WHATSAPP
+  EMAIL
+}
+
+enum FollowUpType {
+  CALL
+  WHATSAPP
+  SMS
+  IN_PERSON
+}
+
+enum FollowUpStatus {
+  CONTACTED
+  NO_ANSWER
+  BUSY
+  PROMISED_TO_PAY
+  WRONG_NUMBER
+}
+
+// --- MODELS ---
+
+model User {
+  id           String    @id @default(uuid()) @db.Uuid
+  email        String    @unique
+  passwordHash String    @map("password_hash")
+  firstName    String    @map("first_name")
+  lastName     String    @map("last_name")
+  role         UserRole  @default(ADMIN)
+  isActive     Boolean   @default(true) @map("is_active")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+  deletedAt    DateTime? @map("deleted_at")
+
+  // Core Audit/Traceability relations
+  createdPayments     Payment[]          @relation("PaymentCreator")
+  createdWithdrawals  Withdrawal[]       @relation("WithdrawalCreator")
+  approvedWithdrawals Withdrawal[]       @relation("WithdrawalApprover")
+  createdPayouts      WithdrawalPayout[] @relation("WithdrawalPayoutCreator")
+  createdReceipts     Receipt[]          @relation("ReceiptCreator")
+  uploadedDocuments   Document[]         @relation("DocumentUploader")
+  verifiedDocuments   Document[]         @relation("DocumentVerifier")
+  createdFollowUps    FollowUp[]         @relation("FollowUpCreator")
+  auditLogs           AuditLog[]
+
+  @@map("users")
+}
+
+model Member {
+  id        String       @id @default(uuid()) @db.Uuid
+  firstName String       @map("first_name")
+  lastName  String       @map("last_name")
+  phone     String       @unique
+  email     String?      @unique
+  status    MemberStatus @default(ACTIVE)
+  remarks   String?
+  createdAt DateTime     @default(now()) @map("created_at")
+  updatedAt DateTime     @updatedAt @map("updated_at")
+  deletedAt DateTime?    @map("deleted_at")
+
+  // Relations
+  enrollments Enrollment[]
+  documents   Document[]
+  followUps   FollowUp[]
+
+  @@map("members")
+}
+
+model PlanTemplate {
+  id               String   @id @default(uuid()) @db.Uuid
+  name             String   @unique
+  totalAmount      Decimal  @map("total_amount") @db.Decimal(12, 2)
+  installmentCount Int      @default(20) @map("installment_count")
+  isActive         Boolean  @default(true) @map("is_active")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  schedules PlanScheduleTemplate[]
+  batches   Batch[]
+
+  @@map("plan_templates")
+}
+
+model PlanScheduleTemplate {
+  id                String       @id @default(uuid()) @db.Uuid
+  planTemplateId    String       @map("plan_template_id") @db.Uuid
+  planTemplate      PlanTemplate @relation(fields: [planTemplateId], references: [id], onDelete: Cascade)
+  installmentNumber Int          @map("installment_number")
+  installmentAmount Decimal      @map("installment_amount") @db.Decimal(12, 2)
+  withdrawalAmount  Decimal      @map("withdrawal_amount") @db.Decimal(12, 2)
+  createdAt         DateTime     @default(now()) @map("created_at")
+  updatedAt         DateTime     @updatedAt @map("updated_at")
+
+  @@unique([planTemplateId, installmentNumber])
+  @@map("plan_schedule_templates")
+}
+
+model Batch {
+  id             String       @id @default(uuid()) @db.Uuid
+  name           String       @unique
+  planTemplateId String       @map("plan_template_id") @db.Uuid
+  planTemplate   PlanTemplate @relation(fields: [planTemplateId], references: [id])
+  startDate      DateTime     @map("start_date")
+  status         BatchStatus  @default(DRAFT)
+  remarks        String?
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+
+  // Relations
+  enrollments       Enrollment[]
+  batchInstallments BatchInstallment[]
+
+  @@map("batches")
+}
+
+model BatchInstallment {
+  id                String                 @id @default(uuid()) @db.Uuid
+  batchId           String                 @map("batch_id") @db.Uuid
+  batch             Batch                  @relation(fields: [batchId], references: [id])
+  installmentNumber Int                    @map("installment_number")
+  dueDate           DateTime               @map("due_date")
+  installmentAmount Decimal                @map("installment_amount") @db.Decimal(12, 2)
+  withdrawalAmount  Decimal                @map("withdrawal_amount") @db.Decimal(12, 2)
+  status            BatchInstallmentStatus @default(PENDING)
+  createdAt         DateTime               @default(now()) @map("created_at")
+  updatedAt         DateTime               @updatedAt @map("updated_at")
+
+  // Relations
+  payments    Payment[]
+  withdrawals Withdrawal[]
+  reminders   Reminder[]
+  followUps   FollowUp[]
+
+  @@unique([batchId, installmentNumber])
+  @@index([batchId])
+  @@index([status])
+  @@map("batch_installments")
+}
+
+model Enrollment {
+  id               String           @id @default(uuid()) @db.Uuid
+  enrollmentNumber String           @unique @map("enrollment_number")
+  memberId         String           @map("member_id") @db.Uuid
+  member           Member           @relation(fields: [memberId], references: [id])
+  batchId          String           @map("batch_id") @db.Uuid
+  batch            Batch            @relation(fields: [batchId], references: [id])
+  status           EnrollmentStatus @default(ACTIVE)
+  remarks          String?
+  createdAt        DateTime         @default(now()) @map("created_at")
+  updatedAt        DateTime         @updatedAt @map("updated_at")
+
+  // Relations
+  payments    Payment[]
+  withdrawals Withdrawal[]
+  documents   Document[]
+  reminders   Reminder[]
+  followUps   FollowUp[]
+
+  @@index([memberId])
+  @@index([batchId])
+  @@index([status])
+  @@map("enrollments")
+}
+
+model Payment {
+  id                 String           @id @default(uuid()) @db.Uuid
+  enrollmentId       String           @map("enrollment_id") @db.Uuid
+  enrollment         Enrollment       @relation(fields: [enrollmentId], references: [id])
+  batchInstallmentId String           @map("batch_installment_id") @db.Uuid
+  batchInstallment   BatchInstallment @relation(fields: [batchInstallmentId], references: [id])
+  amount             Decimal          @db.Decimal(12, 2)
+  paymentDate        DateTime         @map("payment_date")
+  paymentMethod      PaymentMethod    @map("payment_method")
+  referenceNumber    String?          @map("reference_number")
+  status             PaymentStatus    @default(COLLECTED)
+  reversalReason     String?          @map("reversal_reason")
+  reversedAt         DateTime?        @map("reversed_at")
+  remarks            String?
+  createdAt          DateTime         @default(now()) @map("created_at")
+  updatedAt          DateTime         @updatedAt @map("updated_at")
+
+  createdById String @map("created_by_id") @db.Uuid
+  createdBy   User   @relation("PaymentCreator", fields: [createdById], references: [id])
+
+  // Relations
+  receipts  Receipt[]
+  documents Document[]
+
+  @@index([enrollmentId])
+  @@index([batchInstallmentId])
+  @@index([paymentDate])
+  @@index([status])
+  @@map("payments")
+}
+
+model Receipt {
+  id                 String            @id @default(uuid()) @db.Uuid
+  receiptNumber      String            @unique @map("receipt_number")
+  paymentId          String?           @map("payment_id") @db.Uuid
+  payment            Payment?          @relation(fields: [paymentId], references: [id])
+  withdrawalPayoutId String?           @map("withdrawal_payout_id") @db.Uuid
+  withdrawalPayout   WithdrawalPayout? @relation(fields: [withdrawalPayoutId], references: [id])
+  pdfUrl             String?           @map("pdf_url")
+  status             ReceiptStatus     @default(ACTIVE)
+  createdAt          DateTime          @default(now()) @map("created_at")
+  updatedAt          DateTime          @updatedAt @map("updated_at")
+
+  createdById String @map("created_by_id") @db.Uuid
+  createdBy   User   @relation("ReceiptCreator", fields: [createdById], references: [id])
+
+  @@index([paymentId])
+  @@index([withdrawalPayoutId])
+  @@index([status])
+  @@map("receipts")
+}
+
+model Withdrawal {
+  id                 String           @id @default(uuid()) @db.Uuid
+  enrollmentId       String           @map("enrollment_id") @db.Uuid
+  enrollment         Enrollment       @relation(fields: [enrollmentId], references: [id])
+  batchInstallmentId String           @map("batch_installment_id") @db.Uuid
+  batchInstallment   BatchInstallment @relation(fields: [batchInstallmentId], references: [id])
+  requestedAmount    Decimal          @map("requested_amount") @db.Decimal(12, 2)
+  approvedAmount     Decimal?         @map("approved_amount") @db.Decimal(12, 2)
+  status             WithdrawalStatus @default(PENDING)
+  requestedAt        DateTime         @map("requested_at")
+  approvedAt         DateTime?        @map("approved_at")
+  approvedById       String?          @map("approved_by_id") @db.Uuid
+  approvedBy         User?            @relation("WithdrawalApprover", fields: [approvedById], references: [id])
+  remarks            String?
+  createdAt          DateTime         @default(now()) @map("created_at")
+  updatedAt          DateTime         @updatedAt @map("updated_at")
+
+  createdById String @map("created_by_id") @db.Uuid
+  createdBy   User   @relation("WithdrawalCreator", fields: [createdById], references: [id])
+
+  // Relations
+  payouts   WithdrawalPayout[]
+  documents Document[]
+
+  @@unique([enrollmentId, batchInstallmentId])
+  @@index([enrollmentId])
+  @@index([batchInstallmentId])
+  @@index([status])
+  @@map("withdrawals")
+}
+
+model WithdrawalPayout {
+  id              String                 @id @default(uuid()) @db.Uuid
+  withdrawalId    String                 @map("withdrawal_id") @db.Uuid
+  withdrawal      Withdrawal             @relation(fields: [withdrawalId], references: [id])
+  amount          Decimal                @db.Decimal(12, 2)
+  payoutDate      DateTime               @map("payout_date")
+  paymentMethod   PaymentMethod          @map("payment_method")
+  referenceNumber String?                @map("reference_number")
+  status          WithdrawalPayoutStatus @default(PAID)
+  reversalReason  String?                @map("reversal_reason")
+  reversedAt      DateTime?              @map("reversed_at")
+  remarks         String?
+  createdAt       DateTime               @default(now()) @map("created_at")
+  updatedAt       DateTime               @updatedAt @map("updated_at")
+
+  createdById String @map("created_by_id") @db.Uuid
+  createdBy   User   @relation("WithdrawalPayoutCreator", fields: [createdById], references: [id])
+
+  // Relations
+  receipts Receipt[]
+
+  @@index([withdrawalId])
+  @@index([payoutDate])
+  @@index([status])
+  @@map("withdrawal_payouts")
+}
+
+model Document {
+  id           String       @id @default(uuid()) @db.Uuid
+  enrollmentId String       @map("enrollment_id") @db.Uuid
+  enrollment   Enrollment   @relation(fields: [enrollmentId], references: [id])
+  memberId     String?      @map("member_id") @db.Uuid
+  member       Member?      @relation(fields: [memberId], references: [id])
+  withdrawalId String?      @map("withdrawal_id") @db.Uuid
+  withdrawal   Withdrawal?  @relation(fields: [withdrawalId], references: [id])
+  paymentId    String?      @map("payment_id") @db.Uuid
+  payment      Payment?     @relation(fields: [paymentId], references: [id])
+  name         String
+  type         DocumentType
+  fileKey      String       @map("file_key")
+  fileUrl      String?      @map("file_url")
+  mimeType     String       @map("mime_type")
+  fileSize     Int          @map("file_size")
+  uploadedById String       @map("uploaded_by_id") @db.Uuid
+  uploadedBy   User         @relation("DocumentUploader", fields: [uploadedById], references: [id])
+  createdAt    DateTime     @default(now()) @map("created_at")
+  updatedAt    DateTime     @updatedAt @map("updated_at")
+
+  // Merged KYC & Verification Fields
+  kycType            KycDocumentType? @map("kyc_type")
+  kycNumber          String?          @map("kyc_number")
+  verificationStatus KycStatus?       @default(PENDING) @map("verification_status")
+  verifiedAt         DateTime?        @map("verified_at")
+  verifiedById       String?          @map("verified_by_id") @db.Uuid
+  verifiedBy         User?            @relation("DocumentVerifier", fields: [verifiedById], references: [id])
+  rejectionReason    String?          @map("rejection_reason")
+
+  @@index([enrollmentId])
+  @@index([memberId])
+  @@index([withdrawalId])
+  @@index([paymentId])
+  @@index([type])
+  @@map("documents")
+}
+
+model Reminder {
+  id                 String            @id @default(uuid()) @db.Uuid
+  enrollmentId       String            @map("enrollment_id") @db.Uuid
+  enrollment         Enrollment        @relation(fields: [enrollmentId], references: [id])
+  batchInstallmentId String?           @map("batch_installment_id") @db.Uuid
+  batchInstallment   BatchInstallment? @relation(fields: [batchInstallmentId], references: [id])
+  scheduledDate      DateTime          @map("scheduled_date")
+  status             ReminderStatus    @default(PENDING)
+  type               ReminderType
+  message            String
+  sentAt             DateTime?         @map("sent_at")
+  createdAt          DateTime          @default(now()) @map("created_at")
+  updatedAt          DateTime          @updatedAt @map("updated_at")
+
+  @@index([enrollmentId])
+  @@index([batchInstallmentId])
+  @@index([status])
+  @@map("reminders")
+}
+
+model FollowUp {
+  id                 String            @id @default(uuid()) @db.Uuid
+  enrollmentId       String            @map("enrollment_id") @db.Uuid
+  enrollment         Enrollment        @relation(fields: [enrollmentId], references: [id])
+  memberId           String            @map("member_id") @db.Uuid
+  member             Member            @relation(fields: [memberId], references: [id])
+  batchInstallmentId String?           @map("batch_installment_id") @db.Uuid
+  batchInstallment   BatchInstallment? @relation(fields: [batchInstallmentId], references: [id])
+  type               FollowUpType
+  status             FollowUpStatus
+  notes              String?
+  followUpDate       DateTime          @map("follow_up_date")
+  completedAt        DateTime?         @map("completed_at")
+  createdById        String            @map("created_by_id") @db.Uuid
+  createdBy          User              @relation("FollowUpCreator", fields: [createdById], references: [id])
+  createdAt          DateTime          @default(now()) @map("created_at")
+  updatedAt          DateTime          @updatedAt @map("updated_at")
+
+  @@index([enrollmentId])
+  @@index([memberId])
+  @@index([batchInstallmentId])
+  @@index([followUpDate])
+  @@map("follow_ups")
+}
+
+model SystemSettings {
+  id          String   @id @default(uuid()) @db.Uuid
+  key         String   @unique
+  value       String
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("system_settings")
+}
+
+model AuditLog {
+  id            String   @id @default(uuid()) @db.Uuid
+  userId        String?  @map("user_id") @db.Uuid
+  user          User?    @relation(fields: [userId], references: [id])
+  action        String
+  entityName    String   @map("entity_name")
+  entityId      String   @map("entity_id")
+  previousValue Json?    @map("previous_value")
+  newValue      Json?    @map("new_value")
+  reason        String?
+  ipAddress     String?  @map("ip_address")
+  userAgent     String?  @map("user_agent")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@index([entityName, entityId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
