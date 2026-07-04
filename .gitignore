@@ -20,3 +20,29 @@ generated
 prisma/migrations
 
 .DS_Store
+
+# Turbo
+.turbo
+
+# Next.js
+.next
+
+# NestJS
+dist
+
+# Dependencies
+node_modules
+
+# Logs
+*.log
+
+# Environment
+.env
+.env.*
+
+# Coverage
+coverage
+
+# OS
+.DS_Store
+Thumbs.db
