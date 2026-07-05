@@ -121,16 +121,18 @@ enum FollowUpStatus {
 // --- MODELS ---
 
 model User {
-  id           String    @id @default(uuid()) @db.Uuid
-  email        String    @unique
-  passwordHash String    @map("password_hash")
-  firstName    String    @map("first_name")
-  lastName     String    @map("last_name")
-  role         UserRole  @default(ADMIN)
-  isActive     Boolean   @default(true) @map("is_active")
-  createdAt    DateTime  @default(now()) @map("created_at")
-  updatedAt    DateTime  @updatedAt @map("updated_at")
-  deletedAt    DateTime? @map("deleted_at")
+  id                  String               @id @default(uuid()) @db.Uuid
+  email               String               @unique
+  passwordHash        String               @map("password_hash")
+  refreshTokenHash    String?              @map("refresh_token_hash")
+  passwordResetTokens PasswordResetToken[]
+  firstName           String               @map("first_name")
+  lastName            String               @map("last_name")
+  role                UserRole             @default(ADMIN)
+  isActive            Boolean              @default(true) @map("is_active")
+  createdAt           DateTime             @default(now()) @map("created_at")
+  updatedAt           DateTime             @updatedAt @map("updated_at")
+  deletedAt           DateTime?            @map("deleted_at")
 
   // Core Audit/Traceability relations
   createdPayments     Payment[]          @relation("PaymentCreator")
@@ -144,6 +146,25 @@ model User {
   auditLogs           AuditLog[]
 
   @@map("users")
+}
+
+model PasswordResetToken {
+  id String @id @default(uuid()) @db.Uuid
+
+  lookupId  String   @unique @default(cuid()) @map("lookup_id")
+
+  userId String @map("user_id") @db.Uuid
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  expiresAt DateTime @map("expires_at")
+
+  usedAt DateTime? @map("used_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("password_reset_tokens")
 }
 
 model Member {
