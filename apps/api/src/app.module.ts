@@ -2,7 +2,6 @@ import { Module } from '@nestjs/common';
 import { AppController } from '@/app.controller';
 import { AppService } from '@/app.service';
 import { PrismaModule } from '@/common/prisma/prisma.module';
-import { UsersModule } from '@/modules/users/users.module';
 import configuration from '@/config/configuration';
 import { ConfigModule } from '@nestjs/config';
 import { validate, jwtConfig } from '@/config';
@@ -12,6 +11,7 @@ import { AuthRepository } from '@/modules/auth/auth.repository';
 import { TokenModule } from '@/common/token/token.module';
 import { AuthModule } from '@/modules/auth/auth.module';
 import { MailModule } from './common/mail/mail.module';
+import { MembersModule } from '@/modules/members/members.module';
 
 @Module({
   imports: [
@@ -22,12 +22,12 @@ import { MailModule } from './common/mail/mail.module';
       validate,
     }),
     PrismaModule,
-    UsersModule,
     HealthModule,
     TokenModule,
     AuthModule,
     MailModule,
     AppLoggerModule,
+    MembersModule,
   ],
   controllers: [AppController],
   providers: [AppService, AuthRepository],
