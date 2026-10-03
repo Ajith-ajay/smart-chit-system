@@ -1,0 +1,102 @@
+[
+  {
+    "installmentNumber": 1,
+    "installmentAmount": 25000,
+    "withdrawalAmount": 500000
+  },
+  {
+    "installmentNumber": 2,
+    "installmentAmount": 18750,
+    "withdrawalAmount": 350000
+  },
+  {
+    "installmentNumber": 3,
+    "installmentAmount": 18875,
+    "withdrawalAmount": 352500
+  },
+  {
+    "installmentNumber": 4,
+    "installmentAmount": 19000,
+    "withdrawalAmount": 355000
+  },
+  {
+    "installmentNumber": 5,
+    "installmentAmount": 19125,
+    "withdrawalAmount": 357500
+  },
+  {
+    "installmentNumber": 6,
+    "installmentAmount": 19250,
+    "withdrawalAmount": 360000
+  },
+  {
+    "installmentNumber": 7,
+    "installmentAmount": 19500,
+    "withdrawalAmount": 365000
+  },
+  {
+    "installmentNumber": 8,
+    "installmentAmount": 19750,
+    "withdrawalAmount": 370000
+  },
+  {
+    "installmentNumber": 9,
+    "installmentAmount": 20000,
+    "withdrawalAmount": 375000
+  },
+  {
+    "installmentNumber": 10,
+    "installmentAmount": 20250,
+    "withdrawalAmount": 380000
+  },
+  {
+    "installmentNumber": 11,
+    "installmentAmount": 20625,
+    "withdrawalAmount": 387500
+  },
+  {
+    "installmentNumber": 12,
+    "installmentAmount": 21000,
+    "withdrawalAmount": 395000
+  },
+  {
+    "installmentNumber": 13,
+    "installmentAmount": 21375,
+    "withdrawalAmount": 402500
+  },
+  {
+    "installmentNumber": 14,
+    "installmentAmount": 21750,
+    "withdrawalAmount": 410000
+  },
+  {
+    "installmentNumber": 15,
+    "installmentAmount": 22250,
+    "withdrawalAmount": 420000
+  },
+  {
+    "installmentNumber": 16,
+    "installmentAmount": 22750,
+    "withdrawalAmount": 430000
+  },
+  {
+    "installmentNumber": 17,
+    "installmentAmount": 23250,
+    "withdrawalAmount": 440000
+  },
+  {
+    "installmentNumber": 18,
+    "installmentAmount": 23750,
+    "withdrawalAmount": 450000
+  },
+  {
+    "installmentNumber": 19,
+    "installmentAmount": 24375,
+    "withdrawalAmount": 462500
+  },
+  {
+    "installmentNumber": 20,
+    "installmentAmount": 25000,
+    "withdrawalAmount": 475000
+  }
+]

@@ -1,0 +1,95 @@
+services:
+  postgres:
+    image: postgres:17
+    container_name: smart-chit-postgres
+
+    restart: unless-stopped
+
+    env_file:
+      - ../.env.docker
+
+    ports:
+      - '5434:5432'
+
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./postgres/init:/docker-entrypoint-initdb.d
+
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+    networks:
+      - smart-chit-network
+
+  redis:
+    image: redis:8-alpine
+
+    container_name: smart-chit-redis
+
+    restart: unless-stopped
+
+    ports:
+      - '6379:6379'
+
+    volumes:
+      - redis_data:/data
+
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+    networks:
+      - smart-chit-network
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+
+    container_name: smart-chit-pgadmin
+
+    restart: unless-stopped
+
+    env_file:
+      - ../.env.docker
+
+    ports:
+      - '5050:80'
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+
+    networks:
+      - smart-chit-network
+
+  mailpit:
+    image: axllent/mailpit:latest
+
+    container_name: smart-chit-mailpit
+
+    restart: unless-stopped
+
+    ports:
+      - '8025:8025'
+      - '1025:1025'
+
+    networks:
+      - smart-chit-network
+
+volumes:
+  postgres_data:
+
+  redis_data:
+
+  pgadmin_data:
+
+networks:
+  smart-chit-network:
+    driver: bridge
