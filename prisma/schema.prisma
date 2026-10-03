@@ -11,6 +11,7 @@ datasource db {
 enum UserRole {
   SUPER_ADMIN
   ADMIN
+  EMPLOYEE
 }
 
 enum MemberStatus {
@@ -128,6 +129,7 @@ model User {
   passwordResetTokens PasswordResetToken[]
   firstName           String               @map("first_name")
   lastName            String               @map("last_name")
+  phoneNumber         String               @map("phone_number")
   role                UserRole             @default(ADMIN)
   isActive            Boolean              @default(true) @map("is_active")
   createdAt           DateTime             @default(now()) @map("created_at")
@@ -151,7 +153,7 @@ model User {
 model PasswordResetToken {
   id String @id @default(uuid()) @db.Uuid
 
-  lookupId  String   @unique @default(cuid()) @map("lookup_id")
+  lookupId String @unique @default(cuid()) @map("lookup_id")
 
   userId String @map("user_id") @db.Uuid
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -168,16 +170,18 @@ model PasswordResetToken {
 }
 
 model Member {
-  id        String       @id @default(uuid()) @db.Uuid
-  firstName String       @map("first_name")
-  lastName  String       @map("last_name")
-  phone     String       @unique
-  email     String?      @unique
-  status    MemberStatus @default(ACTIVE)
-  remarks   String?
-  createdAt DateTime     @default(now()) @map("created_at")
-  updatedAt DateTime     @updatedAt @map("updated_at")
-  deletedAt DateTime?    @map("deleted_at")
+  id             String       @id @default(uuid()) @db.Uuid
+  firstName      String       @map("first_name")
+  lastName       String       @map("last_name")
+  phone          String       @unique
+  email          String?      @unique
+  status         MemberStatus @default(ACTIVE)
+  nomineeDetails Json?        @map("nominee_details")
+  bankDetails    Json?        @map("bank_details")
+  remarks        String?
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+  deletedAt      DateTime?    @map("deleted_at")
 
   // Relations
   enrollments Enrollment[]

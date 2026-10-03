@@ -1,14 +1,14 @@
-import { PrismaClient, UserRole } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
-import pg from 'pg';
+import { PrismaClient, UserRole } from '@prisma/client';
 import bcrypt from 'bcrypt';
 import 'dotenv/config';
+import pg from 'pg';
 
 // ---------- Import Plan JSON Files ----------
 
-import plan50000 from './data/plans/50000.json';
 import plan100000 from './data/plans/100000.json';
 import plan200000 from './data/plans/200000.json';
+import plan50000 from './data/plans/50000.json';
 import plan500000 from './data/plans/500000.json';
 
 // ---------- Prisma Adapter ----------
@@ -93,6 +93,8 @@ async function seedAdmin() {
     where: { email },
   });
 
+  const phoneNumber = process.env.SEED_ADMIN_PHONE ?? '9876543210';
+
   if (existingUser) {
     log(`Admin already exists (${email})`);
     return existingUser;
@@ -108,6 +110,7 @@ async function seedAdmin() {
       passwordHash,
       firstName: 'Super',
       lastName: 'Admin',
+      phoneNumber,
       role: UserRole.SUPER_ADMIN,
       isActive: true,
     },
