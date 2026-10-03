@@ -1,26 +1,29 @@
 import { Body, Controller, Get, Patch, Post, UseGuards } from '@nestjs/common';
 
-import {
-  ApiLogin,
-  ApiCurrentUser,
-  ApiLogout,
-  ApiForgotPassword,
-  ApiResetPassword,
-  ApiChangePassword,
-} from './auth.swagger';
 import { AuthService } from './auth.service';
+import {
+  ApiChangePassword,
+  ApiCurrentUser,
+  ApiForgotPassword,
+  ApiLogin,
+  ApiLogout,
+  ApiResetPassword,
+  ApiSignup,
+} from './auth.swagger';
 import { CurrentUser } from './decorators/current-user.decorator';
-import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { ChangePasswordDto } from './dto/requests/change-password.dto';
 import { ForgotPasswordDto } from './dto/requests/forgot-password.dto';
 import { LoginDto } from './dto/requests/login.dto';
-import { LoginResponseDto } from './dto/responses/login.response.dto';
-import { ForgotPasswordResponseDto } from './dto/responses/forgot-password.response.dto';
-import { ResetPasswordDto } from './dto/requests/reset-password.dto';
-import { ResetPasswordResponseDto } from './dto/responses/reset-password.response.dto';
-import { LogoutResponseDto } from './dto/responses/logout.response.dto';
 import { RefreshTokenDto } from './dto/requests/refresh-token.dto';
+import { ResetPasswordDto } from './dto/requests/reset-password.dto';
+import { SignupDto } from './dto/requests/signup.dto';
+import { ForgotPasswordResponseDto } from './dto/responses/forgot-password.response.dto';
+import { LoginResponseDto } from './dto/responses/login.response.dto';
+import { LogoutResponseDto } from './dto/responses/logout.response.dto';
 import { RefreshTokenResponseDto } from './dto/responses/refresh-token.response.dto';
+import { ResetPasswordResponseDto } from './dto/responses/reset-password.response.dto';
+import { SignupResponseDto } from './dto/responses/signup.response.dto';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import type { AuthenticatedUser } from './interfaces/authenticated-user.interface';
 
 @Controller({
@@ -35,6 +38,12 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   me(@CurrentUser() user: AuthenticatedUser) {
     return user;
+  }
+
+  @ApiSignup()
+  @Post('signup')
+  async signup(@Body() signupDto: SignupDto): Promise<SignupResponseDto> {
+    return this.authService.signup(signupDto);
   }
 
   @ApiLogin()

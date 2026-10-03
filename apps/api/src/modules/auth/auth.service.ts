@@ -1,24 +1,26 @@
 import {
+  BadRequestException,
   Injectable,
   UnauthorizedException,
-  BadRequestException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
-import { TokenService } from '@/common/token/token.service';
 import { MailService } from '@/common/mail/mail.service';
 import { PasswordService } from '@/common/security/password.service';
+import { TokenService } from '@/common/token/token.service';
 import { AuthRepository } from './auth.repository';
-import { LoginDto } from './dto/requests/login.dto';
-import { LoginResponseDto } from './dto/responses/login.response.dto';
 import { ChangePasswordDto } from './dto/requests/change-password.dto';
 import { ForgotPasswordDto } from './dto/requests/forgot-password.dto';
-import { ForgotPasswordResponseDto } from './dto/responses/forgot-password.response.dto';
-import { ResetPasswordDto } from './dto/requests/reset-password.dto';
-import { ResetPasswordResponseDto } from './dto/responses/reset-password.response.dto';
-import { LogoutResponseDto } from './dto/responses/logout.response.dto';
+import { LoginDto } from './dto/requests/login.dto';
 import { RefreshTokenDto } from './dto/requests/refresh-token.dto';
+import { ResetPasswordDto } from './dto/requests/reset-password.dto';
+import { SignupDto } from './dto/requests/signup.dto';
+import { ForgotPasswordResponseDto } from './dto/responses/forgot-password.response.dto';
+import { LoginResponseDto } from './dto/responses/login.response.dto';
+import { LogoutResponseDto } from './dto/responses/logout.response.dto';
 import { RefreshTokenResponseDto } from './dto/responses/refresh-token.response.dto';
+import { ResetPasswordResponseDto } from './dto/responses/reset-password.response.dto';
+import { SignupResponseDto } from './dto/responses/signup.response.dto';
 
 @Injectable()
 export class AuthService {
@@ -29,6 +31,48 @@ export class AuthService {
     private readonly configService: ConfigService,
     private readonly passwordService: PasswordService,
   ) {}
+
+  async signup(SignupDto: SignupDto): Promise<SignupResponseDto> {
+    const {
+      email,
+      password,
+      confirmPassword,
+      firstName,
+      lastName,
+      phoneNumber,
+    } = SignupDto;
+
+    if (password !== confirmPassword) {
+      throw new BadRequestException('Passwords do not match');
+    }
+
+    const userExists = await this.authRepository.findByEmail(email);
+
+    if (userExists) {
+      throw new BadRequestException('User already exists');
+    }
+
+    const passwordHash = await this.passwordService.hash(password, 12);
+
+    await this.authRepository.create({
+      email,
+      passwordHash,
+      firstName,
+      lastName,
+      phoneNumber,
+    });
+
+    const loginResponse = await this.login({ email, password });
+
+    const response: SignupResponseDto = {
+      message: 'User created successfully',
+      accessToken: loginResponse.accessToken,
+      refreshToken: loginResponse.refreshToken,
+      user: loginResponse.user,
+    };
+
+    return response;
+  }
 
   async login(loginDto: LoginDto): Promise<LoginResponseDto> {
     const user = await this.authRepository.findByEmail(loginDto.email);
