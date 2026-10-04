@@ -3,7 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Member } from '@prisma/client';
+import { Member, Prisma } from '@prisma/client';
 import { CreateMemberDto } from './dto/create-member.dto';
 import { MemberQueryDto } from './dto/member-query.dto';
 import { UpdateMemberDto } from './dto/update-member.dto';
@@ -35,8 +35,8 @@ export class MembersService {
       lastName: dto.lastName,
       phone: dto.phone,
       email: dto.email || null,
-      nomineeDetails: dto.nomineeDetails || null,
-      bankDetails: dto.bankDetails || null,
+      nomineeDetails: dto.nomineeDetails ?? Prisma.JsonNull,
+      bankDetails: dto.bankDetails ?? Prisma.JsonNull,
       remarks: dto.remarks || null,
     });
   }
