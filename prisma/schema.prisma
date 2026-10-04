@@ -202,7 +202,7 @@ model PlanTemplate {
 
   // Relations
   schedules PlanScheduleTemplate[]
-  batches   Batch[]
+  batches   BatchPlan[]
 
   @@map("plan_templates")
 }
@@ -222,27 +222,46 @@ model PlanScheduleTemplate {
 }
 
 model Batch {
-  id             String       @id @default(uuid()) @db.Uuid
-  name           String       @unique
-  planTemplateId String       @map("plan_template_id") @db.Uuid
-  planTemplate   PlanTemplate @relation(fields: [planTemplateId], references: [id])
-  startDate      DateTime     @map("start_date")
-  status         BatchStatus  @default(DRAFT)
+  id             String      @id @default(uuid()) @db.Uuid
+  name           String      @unique
+  startDate      DateTime    @map("start_date")
+  status         BatchStatus @default(DRAFT)
   remarks        String?
-  createdAt      DateTime     @default(now()) @map("created_at")
-  updatedAt      DateTime     @updatedAt @map("updated_at")
+  createdAt      DateTime    @default(now()) @map("created_at")
+  updatedAt      DateTime    @updatedAt @map("updated_at")
 
   // Relations
+  plans             BatchPlan[]
   enrollments       Enrollment[]
   batchInstallments BatchInstallment[]
 
   @@map("batches")
 }
 
+model BatchPlan {
+  id             String       @id @default(uuid()) @db.Uuid
+  batchId        String       @map("batch_id") @db.Uuid
+  batch          Batch        @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  planTemplateId String       @map("plan_template_id") @db.Uuid
+  planTemplate   PlanTemplate @relation(fields: [planTemplateId], references: [id])
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+
+  enrollments       Enrollment[]
+  batchInstallments BatchInstallment[]
+
+  @@unique([batchId, planTemplateId])
+  @@index([batchId])
+  @@index([planTemplateId])
+  @@map("batch_plans")
+}
+
 model BatchInstallment {
   id                String                 @id @default(uuid()) @db.Uuid
   batchId           String                 @map("batch_id") @db.Uuid
   batch             Batch                  @relation(fields: [batchId], references: [id])
+  batchPlanId       String                 @map("batch_plan_id") @db.Uuid
+  batchPlan         BatchPlan              @relation(fields: [batchPlanId], references: [id])
   installmentNumber Int                    @map("installment_number")
   dueDate           DateTime               @map("due_date")
   installmentAmount Decimal                @map("installment_amount") @db.Decimal(12, 2)
@@ -257,8 +276,9 @@ model BatchInstallment {
   reminders   Reminder[]
   followUps   FollowUp[]
 
-  @@unique([batchId, installmentNumber])
+  @@unique([batchPlanId, installmentNumber])
   @@index([batchId])
+  @@index([batchPlanId])
   @@index([status])
   @@map("batch_installments")
 }
@@ -270,6 +290,8 @@ model Enrollment {
   member           Member           @relation(fields: [memberId], references: [id])
   batchId          String           @map("batch_id") @db.Uuid
   batch            Batch            @relation(fields: [batchId], references: [id])
+  batchPlanId      String           @map("batch_plan_id") @db.Uuid
+  batchPlan        BatchPlan        @relation(fields: [batchPlanId], references: [id])
   status           EnrollmentStatus @default(ACTIVE)
   remarks          String?
   createdAt        DateTime         @default(now()) @map("created_at")
@@ -284,6 +306,7 @@ model Enrollment {
 
   @@index([memberId])
   @@index([batchId])
+  @@index([batchPlanId])
   @@index([status])
   @@map("enrollments")
 }

@@ -12,6 +12,8 @@ import { TokenModule } from '@/common/token/token.module';
 import { AuthModule } from '@/modules/auth/auth.module';
 import { MailModule } from './common/mail/mail.module';
 import { MembersModule } from '@/modules/members/members.module';
+import { EnrollmentsModule } from '@/modules/enrollments/enrollments.module';
+import { BatchesModule } from '@/modules/batches/batches.module';
 
 @Module({
   imports: [
@@ -28,6 +30,8 @@ import { MembersModule } from '@/modules/members/members.module';
     MailModule,
     AppLoggerModule,
     MembersModule,
+    EnrollmentsModule,
+    BatchesModule,
   ],
   controllers: [AppController],
   providers: [AppService, AuthRepository],

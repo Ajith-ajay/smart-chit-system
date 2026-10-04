@@ -130,6 +130,20 @@ Everything else belongs to Enrollment:
 - Documents
 - Receipts
 
+### Enrollment assignment workflow
+
+- An administrator selects an active member and an existing draft/running batch. The batch determines the plan template and its stored schedule; schedules are never recalculated during enrollment.
+- Each assignment receives a unique `ENR-` reference and remains linked to the member and batch for its full history.
+- A member cannot be enrolled twice in the same batch. Cancelled enrollments remain in the history and do not permit a second assignment to that same batch.
+- Only active plan templates and active members can be assigned. Completed/cancelled batches are not joinable.
+- The initial API currently activates enrollments only when all batch installments are still pending. Joining a batch after collection has begun requires collecting each missed scheduled installment and issuing receipts first. The payment and receipt workflow is a separate vertical slice and must be completed before late enrollment is enabled.
+
+API endpoints (authenticated, admin roles):
+
+- `GET /api/v1/enrollments/available-batches` — joinable batches with the plan's stored schedule.
+- `GET /api/v1/enrollments/members/:memberId` — a member's enrollment history.
+- `POST /api/v1/enrollments/members/:memberId` — assign the member to a batch using `{ "batchId": "<uuid>", "remarks": "optional" }`.
+
 ---
 
 # Payment Rules
