@@ -15,6 +15,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { MailModule } from './common/mail/mail.module';
 import { PaymentsModule } from './modules/payments/payments.module';
+import { ReceiptsModule } from './modules/receipts/receipts.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { PaymentsModule } from './modules/payments/payments.module';
     EnrollmentsModule,
     BatchesModule,
     PaymentsModule,
+    ReceiptsModule,
   ],
   controllers: [AppController],
   providers: [AppService, AuthRepository],

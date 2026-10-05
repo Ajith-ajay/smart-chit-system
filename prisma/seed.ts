@@ -231,6 +231,11 @@ async function seedSystemSettings() {
       description: 'Receipt Prefix',
     },
     {
+      key: 'receipt_sequence',
+      value: '0',
+      description: 'Monotonically increasing receipt sequence',
+    },
+    {
       key: 'withdrawal_prefix',
       value: 'WDL',
       description: 'Withdrawal Prefix',
