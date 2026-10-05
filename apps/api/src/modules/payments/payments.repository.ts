@@ -272,6 +272,10 @@ export class PaymentsRepository {
       ]),
     );
 
+    // Each Payment is an independent collection event. The same installment
+    // may therefore appear in allocations belonging to many different payments.
+    // This is what supports split payments such as 2500 + 2500, 1000 x 5,
+    // or daily 100-rupee collections.
     const outstanding = installments
       .map((installment) => {
         const paid =
@@ -293,6 +297,9 @@ export class PaymentsRepository {
     }
 
     if (requestedAllocations?.length) {
+      // Explicit allocations intentionally permit out-of-order payment.
+      // An operator can pay installment 5 while installments 1-4 remain
+      // outstanding. The ledger still prevents overpayment of installment 5.
       const byId = new Map(outstanding.map((i) => [i.id, i]));
       const seen = new Set<string>();
       const allocations: Array<{
@@ -334,6 +341,10 @@ export class PaymentsRepository {
       return allocations;
     }
 
+    // Automatic allocation is chronological and consumes the oldest
+    // outstanding balance first. If the collected amount is larger than one
+    // installment, the remainder naturally rolls into later installments,
+    // which supports advance payments without special-case logic.
     let remaining = paymentAmount;
     const allocations: Array<{
       batchInstallmentId: string;
