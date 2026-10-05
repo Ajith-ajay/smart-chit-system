@@ -4,7 +4,13 @@ import {
   Injectable,
   UnprocessableEntityException,
 } from '@nestjs/common';
-import { PaymentMethod, PaymentStatus, Prisma } from '@prisma/client';
+import {
+  PaymentMethod,
+  PaymentStatus,
+  Prisma,
+  ReceiptStatus,
+} from '@prisma/client';
+import { nextReceiptNumber } from '@/modules/receipts/receipts.repository';
 
 @Injectable()
 export class PaymentsRepository {
@@ -191,6 +197,16 @@ export class PaymentsRepository {
           })),
         });
 
+        const receiptNumber = await nextReceiptNumber(tx);
+        const receipt = await tx.receipt.create({
+          data: {
+            receiptNumber,
+            paymentId: payment.id,
+            status: ReceiptStatus.ACTIVE,
+            createdById: args.createdById,
+          },
+        });
+
         await tx.auditLog.create({
           data: {
             userId: args.createdById,
@@ -205,6 +221,8 @@ export class PaymentsRepository {
                 batchInstallmentId: a.batchInstallmentId,
                 amount: a.amount.toFixed(2),
               })),
+              receiptId: receipt.id,
+              receiptNumber: receipt.receiptNumber,
             },
           },
         });
@@ -230,6 +248,7 @@ export class PaymentsRepository {
               include: { batchInstallment: true },
               orderBy: { createdAt: 'asc' },
             },
+            receipts: { orderBy: { createdAt: 'desc' } },
           },
         });
       },
@@ -393,6 +412,11 @@ export class PaymentsRepository {
           },
         });
 
+        await tx.receipt.updateMany({
+          where: { paymentId: id, status: ReceiptStatus.ACTIVE },
+          data: { status: ReceiptStatus.CANCELLED },
+        });
+
         await tx.auditLog.create({
           data: {
             userId,
@@ -409,6 +433,7 @@ export class PaymentsRepository {
           where: { id },
           include: {
             allocations: { include: { batchInstallment: true } },
+            receipts: { orderBy: { createdAt: 'desc' } },
             enrollment: {
               include: {
                 member: {
