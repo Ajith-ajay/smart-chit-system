@@ -1,10 +1,10 @@
-import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app.module';
-import { ValidationPipe, VersioningType } from '@nestjs/common';
 import { HttpExceptionFilter } from '@/common/filters/http-exception.filter';
 import { ResponseInterceptor } from '@/common/interceptors/response.interceptor';
+import { ValidationPipe, VersioningType } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { NestFactory } from '@nestjs/core';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -59,10 +59,11 @@ async function bootstrap() {
   const url = await app.getUrl();
 
   console.log(`
-🚀 Smart Chit API
+    🚀 Smart Chit API
 
-Environment : ${configService.get('app.nodeEnv')}
-URL         : ${url}
-`);
+    Environment : ${configService.get('app.nodeEnv')}
+    URL         : ${url}
+    Docs        : ${url}/docs
+  `);
 }
 void bootstrap();
