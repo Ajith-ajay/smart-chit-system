@@ -32,6 +32,14 @@ export const envSchema = z.object({
   SMTP_USER: z.email(),
   SMTP_PASSWORD: z.string(),
   MAIL_FROM: z.string(),
+
+  LOCAL_DOCUMENT_STORAGE_DIR: z.string().default('storage/documents'),
+  WHATSAPP_ACCESS_TOKEN: z.string().optional(),
+  WHATSAPP_PHONE_NUMBER_ID: z.string().optional(),
+  WHATSAPP_GRAPH_VERSION: z.string().optional(),
+  BATCH_AUTOMATION_ENABLED: z.coerce.boolean().default(false),
+  BATCH_AUTOMATION_INTERVAL_MINUTES: z.coerce.number().int().min(5).default(60),
+  WHATSAPP_AUTOMATION_ENABLED: z.coerce.boolean().default(false),
 });
 
 export type Env = z.infer<typeof envSchema>;
