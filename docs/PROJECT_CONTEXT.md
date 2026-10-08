@@ -295,3 +295,39 @@ Next Steps
 # Project Vision
 
 Build a production-ready financial management platform that can eventually evolve into a SaaS application supporting multiple organizations while preserving the current family's business workflow.
+
+## Implemented Financial and Document Modules
+
+The current API implementation includes:
+
+- Authentication and role-based access
+- Member management
+- Multi-plan batch management
+- Enrollment and late-enrollment catch-up
+- Flexible payment collection and payment allocation
+- Payment receipts
+- Withdrawal requests, manual approval, and split payouts
+- Document metadata management and KYC verification
+
+### Payment flexibility
+
+A member may pay one installment through any number of partial payments. Payments can also be allocated across multiple installments, including advance payments and intentionally skipped earlier installments. Installment schedules remain immutable; balances are derived from payment allocations.
+
+### Withdrawal flexibility
+
+There is no monthly limit on the number of members who can withdraw. Any number of eligible members may have withdrawal requests approved in the same month, subject to the predefined withdrawal schedule and manual business approval.
+
+### Document/KYC rules
+
+Documents are registered against enrollments and can reference the related member, payment, or withdrawal. KYC documents require a KYC type and number and start in PENDING status. Only administrators can verify or reject KYC documents. A verified KYC document cannot be downgraded; a replacement must be uploaded as a new document.
+
+## Lifecycle and operational rules (2026-10)
+
+- Installment months are due dates, not hard payment cutoffs. A past-due installment remains open until its required member balances are fully reconciled.
+- Multiple installments may remain ACTIVE simultaneously. The lifecycle processor never closes a previous installment merely because a new month starts.
+- An installment can become COMPLETED only after the late-enrollment window has closed (after installment 3) and all non-cancelled enrollments in that plan have fully paid that installment.
+- Enrollment completion is derived from all 20 installment balances reaching zero.
+- Batch completion requires the 20 installment records to be COMPLETED and no ACTIVE enrollments to remain.
+- Documents are physically stored in the local filesystem during development. The storage service is isolated so it can later be replaced with S3.
+- Payment reminders are currently WhatsApp-only. The provider uses configurable WhatsApp Business Cloud API credentials; additional channels can be added later behind the provider boundary.
+- Any number of eligible members may withdraw in the same month; there is no monthly withdrawal-count cap.
