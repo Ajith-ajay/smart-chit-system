@@ -16,6 +16,10 @@ import { ConfigModule } from '@nestjs/config';
 import { MailModule } from './common/mail/mail.module';
 import { PaymentsModule } from './modules/payments/payments.module';
 import { ReceiptsModule } from './modules/receipts/receipts.module';
+import { WithdrawalsModule } from './modules/withdrawals/withdrawals.module';
+import { DocumentsModule } from './modules/documents/documents.module';
+import { RemindersModule } from './modules/reminders/reminders.module';
+import { ReportsModule } from './modules/reports/reports.module';
 
 @Module({
   imports: [
@@ -36,6 +40,10 @@ import { ReceiptsModule } from './modules/receipts/receipts.module';
     BatchesModule,
     PaymentsModule,
     ReceiptsModule,
+    WithdrawalsModule,
+    DocumentsModule,
+    RemindersModule,
+    ReportsModule,
   ],
   controllers: [AppController],
   providers: [AppService, AuthRepository],
