@@ -22,6 +22,10 @@ import { JwtAuthGuard } from '@/modules/auth/guards/jwt-auth.guard';
 import { RolesGuard } from '@/modules/auth/guards/roles.guard';
 import { Roles } from '@/modules/auth/decorators/roles.decorator';
 import { BatchesService } from './batches.service';
+import { BatchLifecycleService } from './batch-lifecycle.service';
+import { ProcessBatchLifecycleDto } from './dto/process-batch-lifecycle.dto';
+import { CurrentUser } from '@/modules/auth/decorators/current-user.decorator';
+import type { AuthenticatedUser } from '@/modules/auth/interfaces/authenticated-user.interface';
 import { CreateBatchDto } from './dto/create-batch.dto';
 import { UpdateBatchDto } from './dto/update-batch.dto';
 import { AddBatchPlanDto } from './dto/add-batch-plan.dto';
@@ -32,7 +36,10 @@ import { AddBatchPlanDto } from './dto/add-batch-plan.dto';
 @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
 @Controller({ path: 'batches', version: '1' })
 export class BatchesController {
-  constructor(private readonly service: BatchesService) {}
+  constructor(
+    private readonly service: BatchesService,
+    private readonly lifecycle: BatchLifecycleService,
+  ) {}
 
   @Post()
   @ApiOperation({
@@ -53,6 +60,16 @@ export class BatchesController {
     status?: BatchStatus,
   ) {
     return this.service.findAll(status);
+  }
+
+  @Post('lifecycle/process-all')
+  @ApiOperation({ summary: 'Process all due DRAFT/RUNNING batches' })
+  processAllLifecycle(
+    @Body() dto: ProcessBatchLifecycleDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    const asOfDate = dto.asOfDate ? new Date(dto.asOfDate) : new Date();
+    return this.lifecycle.processAll(asOfDate, user.id);
   }
 
   @Get(':id')
@@ -94,6 +111,18 @@ export class BatchesController {
   @ApiOperation({ summary: 'Start a DRAFT batch and activate installment 1' })
   start(@Param('id', new ParseUUIDPipe()) id: string) {
     return this.service.start(id);
+  }
+
+  @Post(':id/lifecycle/process')
+  @ApiOperation({
+    summary: 'Process batch lifecycle for due installments and completion',
+  })
+  processLifecycle(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() dto: ProcessBatchLifecycleDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.lifecycle.process(id, dto, user.id);
   }
 
   @Post(':id/complete')
