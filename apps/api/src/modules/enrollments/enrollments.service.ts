@@ -194,31 +194,29 @@ export class EnrollmentsService {
       status: BatchInstallmentStatus;
     }>,
   ) {
-    const activeIndex = installments.findIndex(
-      (i) => i.status === BatchInstallmentStatus.ACTIVE,
+    const now = new Date();
+    const currentInstallmentNumber = installments.reduce(
+      (latest, installment) =>
+        installment.dueDate <= now
+          ? Math.max(latest, installment.installmentNumber)
+          : latest,
+      0,
     );
-    if (activeIndex >= 0) {
-      if (activeIndex > 2) {
-        throw new UnprocessableEntityException(
-          'Catch-up enrollment is closed after the third installment.',
-        );
-      }
-      return installments.slice(0, activeIndex + 1);
-    }
 
-    const completedCount = installments.filter(
-      (i) => i.status === BatchInstallmentStatus.COMPLETED,
-    ).length;
-    if (completedCount === 0) {
+    if (currentInstallmentNumber === 0) {
       throw new UnprocessableEntityException(
-        'The batch has not activated an installment yet.',
+        'The batch has not reached its first installment date yet.',
       );
     }
-    if (completedCount >= 3) {
+    if (currentInstallmentNumber > 3) {
       throw new UnprocessableEntityException(
         'Catch-up enrollment is closed after the third installment.',
       );
     }
-    return installments.slice(0, completedCount + 1);
+
+    return installments.filter(
+      (installment) =>
+        installment.installmentNumber <= currentInstallmentNumber,
+    );
   }
 }
