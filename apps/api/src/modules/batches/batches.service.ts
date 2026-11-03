@@ -57,6 +57,10 @@ export class BatchesService {
     return this.repository.findAll(status);
   }
 
+  findAvailablePlanTemplates() {
+    return this.repository.findAvailablePlanTemplates();
+  }
+
   async findOne(id: string) {
     const batch = await this.repository.findById(id);
     if (!batch) throw new NotFoundException(`Batch with ID ${id} not found`);

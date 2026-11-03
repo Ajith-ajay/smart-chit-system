@@ -1,0 +1,6 @@
+{
+  "name": "Smart Chit Management System (SCMS) Admin",
+  "description": "Production-grade admin dashboard for Smart Chit Management System to manage members, batches, plans, enrollments, payments, withdrawals, KYC documents, reminders, and financial reports.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

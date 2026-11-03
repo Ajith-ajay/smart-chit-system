@@ -52,6 +52,14 @@ export class BatchesRepository {
     });
   }
 
+  findAvailablePlanTemplates() {
+    return this.prisma.planTemplate.findMany({
+      where: { isActive: true },
+      orderBy: { name: 'asc' },
+      include: { schedules: { orderBy: { installmentNumber: 'asc' } } },
+    });
+  }
+
   create(
     data: {
       name: string;
