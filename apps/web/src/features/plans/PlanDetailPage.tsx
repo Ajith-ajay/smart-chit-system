@@ -1,7 +1,6 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { plansApi } from '@/lib/api/plans';
-import { PageHeader } from '@/components/common/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
@@ -17,7 +16,7 @@ import {
 } from '@/components/ui/Table';
 import { formatINR } from '@/lib/utils';
 import { extractErrorMessage } from '@/lib/api/client';
-import { ArrowLeft, Layers, ShieldCheck, Calendar } from 'lucide-react';
+import { ArrowLeft, ShieldCheck } from 'lucide-react';
 
 export interface PlanDetailPageProps {
   planId: string;
@@ -68,20 +67,6 @@ export const PlanDetailPage: React.FC<PlanDetailPageProps> = ({ planId, onNaviga
     );
   }
 
-  // Fallback visual 20-schedule calculation if backend doesn't supply array in JSON directly
-  const installmentCount = plan.totalInstallments || 20;
-  const nominalMonthly = plan.monthlyContribution || plan.chitValue / installmentCount;
-
-  const schedules =
-    plan.installmentSchedule && plan.installmentSchedule.length > 0
-      ? plan.installmentSchedule
-      : Array.from({ length: installmentCount }, (_, i) => ({
-          installmentNumber: i + 1,
-          dueAmount: nominalMonthly,
-          dividendAmount: 0,
-          netPayableAmount: nominalMonthly,
-        }));
-
   return (
     <div className="space-y-6">
       <Button
@@ -93,71 +78,68 @@ export const PlanDetailPage: React.FC<PlanDetailPageProps> = ({ planId, onNaviga
         Back to Plans
       </Button>
 
-      {/* Overview header */}
       <Card className="p-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-2xl font-black text-slate-900">{plan.name}</h1>
-              <Badge variant="outline">20-Month Standard</Badge>
+              <Badge variant="outline">Active plan</Badge>
             </div>
             <p className="text-xs text-slate-500 mt-1">
-              Authoritative plan blueprint with fixed installment calculations
+              Approved fixed collection and withdrawal schedule
             </p>
           </div>
-
           <div className="flex items-center gap-6">
             <div>
-              <span className="text-xs text-slate-400">Total Chit Value</span>
-              <p className="text-2xl font-black text-slate-900">{formatINR(plan.chitValue)}</p>
+              <span className="text-xs text-slate-400">Plan amount</span>
+              <p className="text-2xl font-black text-slate-900">
+                {formatINR(Number(plan.totalAmount))}
+              </p>
             </div>
             <div className="border-l border-slate-200 pl-6">
               <span className="text-xs text-slate-400">Duration</span>
-              <p className="text-xl font-bold text-slate-900">{installmentCount} Months</p>
+              <p className="text-xl font-bold text-slate-900">{plan.installmentCount} Months</p>
             </div>
           </div>
         </div>
       </Card>
 
-      {/* 20-Installment Schedule Table */}
       <Card className="p-5">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h3 className="font-semibold text-sm text-slate-900">20-Installment Schedule</h3>
+            <h3 className="font-semibold text-sm text-slate-900">Predefined schedule</h3>
             <p className="text-xs text-slate-500">
-              Prescribed collection schedule for all enrolled seats in this plan
+              Amounts are read directly from the stored plan template
             </p>
           </div>
-          <Badge variant="info">Fixed Scheme</Badge>
+          <Badge variant="info">{plan.schedules.length} schedule rows</Badge>
         </div>
-
+        {plan.schedules.length !== plan.installmentCount && (
+          <Alert variant="error" title="Schedule configuration needs attention">
+            The stored schedule contains {plan.schedules.length} rows, but this plan declares{' '}
+            {plan.installmentCount} installments. Do not use this plan to create a batch until the
+            data is corrected.
+          </Alert>
+        )}
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-24">Month #</TableHead>
-              <TableHead>Installment Name</TableHead>
-              <TableHead>Gross Scheduled</TableHead>
-              <TableHead>Dividend Offset</TableHead>
-              <TableHead className="text-right">Net Payable Amount</TableHead>
+              <TableHead className="w-24">Installment</TableHead>
+              <TableHead>Collection amount</TableHead>
+              <TableHead className="text-right">Withdrawal amount</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {schedules.map((item) => (
+            {plan.schedules.map((item) => (
               <TableRow key={item.installmentNumber}>
                 <TableCell className="font-mono font-semibold text-xs text-slate-900">
                   #{item.installmentNumber}
                 </TableCell>
-                <TableCell className="text-xs text-slate-700">
-                  Installment {item.installmentNumber} of {installmentCount}
-                </TableCell>
-                <TableCell className="text-xs text-slate-600 font-medium">
-                  {formatINR(item.dueAmount)}
-                </TableCell>
-                <TableCell className="text-xs text-emerald-700 font-medium">
-                  {item.dividendAmount ? formatINR(item.dividendAmount) : '—'}
+                <TableCell className="text-xs text-slate-700 font-medium">
+                  {formatINR(Number(item.installmentAmount))}
                 </TableCell>
                 <TableCell className="text-right text-xs font-bold text-slate-900">
-                  {formatINR(item.netPayableAmount || item.dueAmount)}
+                  {formatINR(Number(item.withdrawalAmount))}
                 </TableCell>
               </TableRow>
             ))}
@@ -165,12 +147,12 @@ export const PlanDetailPage: React.FC<PlanDetailPageProps> = ({ planId, onNaviga
         </Table>
       </Card>
 
-      {/* Notice */}
       <div className="rounded-md border border-slate-200 bg-slate-50 p-4 text-xs text-slate-500 flex items-center gap-2">
         <ShieldCheck className="w-4 h-4 text-slate-400 shrink-0" />
         <span>
-          Plan configurations are read-only templates. Financial allocations and late penalties are
-          computed dynamically upon batch enrollment.
+          Plan templates are read-only in this showcase. When a batch is created, the backend copies
+          this schedule into batch installments; later template edits do not rewrite historical
+          batch schedules.
         </span>
       </div>
     </div>

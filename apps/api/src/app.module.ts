@@ -20,6 +20,7 @@ import { WithdrawalsModule } from './modules/withdrawals/withdrawals.module';
 import { DocumentsModule } from './modules/documents/documents.module';
 import { RemindersModule } from './modules/reminders/reminders.module';
 import { ReportsModule } from './modules/reports/reports.module';
+import { PlansModule } from './modules/plans/plans.module';
 
 @Module({
   imports: [
@@ -44,6 +45,7 @@ import { ReportsModule } from './modules/reports/reports.module';
     DocumentsModule,
     RemindersModule,
     ReportsModule,
+    PlansModule,
   ],
   controllers: [AppController],
   providers: [AppService, AuthRepository],
