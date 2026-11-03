@@ -173,7 +173,8 @@ export const EnrollmentCatchUpPage: React.FC<EnrollmentCatchUpPageProps> = ({ on
             <option value="">-- Choose Plan --</option>
             {availableBatchPlans.map((bp) => (
               <option key={bp.id} value={bp.id}>
-                {bp.planTemplate?.name || 'Plan'} ({formatINR(bp.planTemplate?.chitValue)})
+                {bp.planTemplate?.name || 'Plan'} ({formatINR(Number(bp.planTemplate?.totalAmount))}
+                )
               </option>
             ))}
           </Select>

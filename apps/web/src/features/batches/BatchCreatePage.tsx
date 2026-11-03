@@ -152,7 +152,7 @@ export const BatchCreatePage: React.FC<BatchCreatePageProps> = ({ onNavigate }) 
                   >
                     <div>
                       <p className="font-semibold text-slate-900">{p.name}</p>
-                      <p className="text-slate-500 font-mono">{formatINR(p.chitValue)}</p>
+                      <p className="text-slate-500 font-mono">{formatINR(Number(p.totalAmount))}</p>
                     </div>
                     {isSelected ? (
                       <CheckSquare className="w-4 h-4 text-slate-900" />

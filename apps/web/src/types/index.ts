@@ -110,27 +110,16 @@ export type UpdateMemberDto = Partial<CreateMemberDto> & { isActive?: boolean };
 export interface PlanTemplate {
   id: string;
   name: string;
-  code?: string;
-  chitValue: number;
-  totalInstallments: number;
-  description?: string;
-  monthlyContribution?: number;
-  installmentSchedule?: PlanScheduleItem[];
-  withdrawalSchedule?: PlanWithdrawalScheduleItem[];
-  createdAt?: string;
+  totalAmount: string | number;
+  installmentCount: number;
+  isActive: boolean;
+  schedules: PlanScheduleItem[];
 }
 
 export interface PlanScheduleItem {
   installmentNumber: number;
-  dueAmount: number;
-  dividendAmount?: number;
-  netPayableAmount: number;
-}
-
-export interface PlanWithdrawalScheduleItem {
-  installmentNumber: number;
-  eligibleMonth: number;
-  maximumBidOrPayout: number;
+  installmentAmount: string | number;
+  withdrawalAmount: string | number;
 }
 
 // ------------------------------------------

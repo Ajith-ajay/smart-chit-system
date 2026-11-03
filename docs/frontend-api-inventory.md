@@ -79,3 +79,14 @@ Checked against `apps/api/src/modules/**/**.controller.ts` and the DTOs present 
 - Withdrawal routes currently enforce JWT but not the role guard shown on several other financial modules. API permissions remain authoritative.
 - Member DTOs currently accept nominee and bank JSON, but no address or standalone KYC fields. KYC data belongs to the documents API.
 - Installment schedules are generated from the plan templates on the backend. The frontend must not calculate them.
+
+## 2026-11-03 update — plan showcase API
+
+The dedicated plan showcase API is now implemented:
+
+- `GET /plans` — active plan templates with ordered predefined schedule rows.
+- `GET /plans/:id` — one active plan template with its predefined schedule.
+
+Both routes require JWT authentication and SUPER_ADMIN/ADMIN. The response uses the global `{ success, timestamp, data }` envelope. Schedule values are `totalAmount`, `installmentCount`, `installmentAmount`, and `withdrawalAmount` (Prisma Decimal values serialize as strings). Plan templates remain read-only through this API; seed JSON files are the master data source and batch creation snapshots schedules.
+
+See `IMPLEMENTATION_AUDIT_AND_PLAN_SHOWCASE.md` for the source audit, full endpoint inventory, frontend contract mismatches, missing pages/endpoints, and priority remediation catalogue.

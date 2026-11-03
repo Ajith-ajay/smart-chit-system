@@ -319,10 +319,12 @@ export const BatchDetailPage: React.FC<BatchDetailPageProps> = ({
                       </div>
                     </TableCell>
                     <TableCell className="font-bold text-slate-900 text-xs">
-                      {bp.planTemplate?.chitValue ? formatINR(bp.planTemplate.chitValue) : '—'}
+                      {Number(bp.planTemplate?.totalAmount)
+                        ? formatINR(Number(bp.planTemplate.totalAmount))
+                        : '—'}
                     </TableCell>
                     <TableCell className="text-xs text-slate-600">
-                      {bp.planTemplate?.totalInstallments || 20} Installments
+                      {bp.planTemplate?.installmentCount || 20} Installments
                     </TableCell>
                     <TableCell className="text-xs text-slate-600">
                       {bp.enrolledSeats || 0} enrolled {bp.totalSeats ? `/ ${bp.totalSeats}` : ''}
@@ -654,7 +656,7 @@ export const BatchDetailPage: React.FC<BatchDetailPageProps> = ({
             <option value="">-- Select Plan Template --</option>
             {allPlans.map((p) => (
               <option key={p.id} value={p.id}>
-                {p.name} ({formatINR(p.chitValue)})
+                {p.name} ({formatINR(Number(p.totalAmount))})
               </option>
             ))}
           </Select>

@@ -31,7 +31,7 @@ export const PlansListPage: React.FC<PlansListPageProps> = ({ onNavigate }) => {
     <div className="space-y-6">
       <PageHeader
         title="Chit Plan Templates"
-        description="Standard chit plans with backend-verified 20-month installment & payout schedules"
+        description="Standard chit plans with backend-verified 20-month collection & withdrawal schedules"
       />
 
       {error && (
@@ -70,38 +70,23 @@ export const PlansListPage: React.FC<PlansListPageProps> = ({ onNavigate }) => {
                 <div className="flex items-center justify-between mb-3">
                   <Badge variant="outline">Plan Template</Badge>
                   <span className="text-[11px] text-slate-400 font-mono">
-                    {plan.totalInstallments || 20} Months
+                    {plan.installmentCount} Months
                   </span>
                 </div>
 
                 <h3 className="text-lg font-bold text-slate-900">{plan.name}</h3>
                 <div className="mt-3">
-                  <span className="text-xs text-slate-500">Chit Value</span>
+                  <span className="text-xs text-slate-500">Plan Amount</span>
                   <p className="text-2xl font-black text-slate-900 tracking-tight">
-                    {formatINR(plan.chitValue)}
+                    {formatINR(Number(plan.totalAmount))}
                   </p>
                 </div>
 
                 <div className="mt-4 pt-3 border-t border-slate-100 space-y-1.5 text-xs text-slate-600">
                   <div className="flex justify-between">
                     <span className="text-slate-500">Installments:</span>
-                    <strong className="text-slate-800">
-                      {plan.totalInstallments || 20} installments
-                    </strong>
+                    <strong className="text-slate-800">{plan.installmentCount} installments</strong>
                   </div>
-                  {plan.monthlyContribution && (
-                    <div className="flex justify-between">
-                      <span className="text-slate-500">Nominal/Month:</span>
-                      <strong className="text-slate-800">
-                        {formatINR(plan.monthlyContribution)}
-                      </strong>
-                    </div>
-                  )}
-                  {plan.description && (
-                    <p className="text-[11px] text-slate-400 pt-1 line-clamp-2">
-                      {plan.description}
-                    </p>
-                  )}
                 </div>
               </div>
 
@@ -112,7 +97,7 @@ export const PlansListPage: React.FC<PlansListPageProps> = ({ onNavigate }) => {
                   className="w-full justify-between"
                   onClick={() => onNavigate(`/plans/${plan.id}`)}
                 >
-                  <span>View 20-Month Schedule</span>
+                  <span>View {plan.installmentCount}-Month Schedule</span>
                   <ArrowRight className="w-3.5 h-3.5" />
                 </Button>
               </div>
@@ -127,9 +112,8 @@ export const PlansListPage: React.FC<PlansListPageProps> = ({ onNavigate }) => {
         <div>
           <p className="font-semibold text-slate-800">Decimal-Based Financial Precision</p>
           <p className="mt-0.5 text-slate-500">
-            All installment schedules, dividends, and withdrawal eligibility formulas are strictly
-            computed by the NestJS Prisma engine with decimal precision. The frontend displays
-            authoritative backend values without modification.
+            All installment and withdrawal amounts come from the approved plan template stored in
+            the database. The frontend displays the backend schedule without recalculating it.
           </p>
         </div>
       </div>
