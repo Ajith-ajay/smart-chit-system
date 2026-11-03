@@ -62,6 +62,15 @@ export class BatchesController {
     return this.service.findAll(status);
   }
 
+  @Get('plan-templates')
+  @ApiOperation({
+    summary:
+      'List active plan templates with their predefined installment schedules',
+  })
+  findAvailablePlanTemplates() {
+    return this.service.findAvailablePlanTemplates();
+  }
+
   @Post('lifecycle/process-all')
   @ApiOperation({ summary: 'Process all due DRAFT/RUNNING batches' })
   processAllLifecycle(
