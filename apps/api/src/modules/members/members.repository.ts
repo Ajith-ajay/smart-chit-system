@@ -98,4 +98,12 @@ export class MembersRepository {
       },
     });
   }
+
+  async generateMemberCode(): Promise<string> {
+    const result = await this.prisma.$queryRaw<
+      { value: bigint }[]
+    >`SELECT nextval('member_code_seq') AS value`;
+
+    return `MEM-${result[0].value.toString().padStart(4, '0')}`;
+  }
 }

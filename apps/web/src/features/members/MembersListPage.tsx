@@ -41,7 +41,8 @@ export const MembersListPage: React.FC<MembersListPageProps> = ({ onNavigate }) 
         page,
         limit: 15,
         search: searchTerm.trim() || undefined,
-        isActive: statusFilter === 'all' ? undefined : statusFilter === 'active',
+        status:
+          statusFilter === 'all' ? undefined : statusFilter === 'active' ? 'ACTIVE' : 'INACTIVE',
       }),
   });
 
@@ -182,10 +183,12 @@ export const MembersListPage: React.FC<MembersListPageProps> = ({ onNavigate }) 
                   <TableCell>
                     <div className="space-y-0.5 text-xs text-slate-600">
                       <p className="truncate max-w-[140px]">
-                        {member.bankName ? `${member.bankName}` : 'No Bank Added'}
+                        {member.bankDetails.bankName
+                          ? `${member.bankDetails.bankName}`
+                          : 'No Bank Added'}
                       </p>
                       <div className="flex items-center gap-1">
-                        <Badge
+                        {/* <Badge
                           variant={
                             member.kycStatus === 'VERIFIED'
                               ? 'success'
@@ -195,13 +198,13 @@ export const MembersListPage: React.FC<MembersListPageProps> = ({ onNavigate }) 
                           }
                         >
                           KYC: {member.kycStatus || 'PENDING'}
-                        </Badge>
+                        </Badge> */}
                       </div>
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge variant={member.isActive ? 'success' : 'outline'}>
-                      {member.isActive ? 'Active' : 'Inactive'}
+                    <Badge variant={member.status ? 'success' : 'outline'}>
+                      {member.status ? 'Active' : 'Inactive'}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-xs text-slate-500">

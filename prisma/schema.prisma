@@ -171,10 +171,15 @@ model PasswordResetToken {
 
 model Member {
   id             String       @id @default(uuid()) @db.Uuid
+  memberCode     String       @unique @map("member_code")
   firstName      String       @map("first_name")
   lastName       String       @map("last_name")
   phone          String       @unique
   email          String?      @unique
+  address        String?      @db.Text
+  city           String?      @db.VarChar(50)
+  state          String?      @db.VarChar(50)
+  pincode        String?      @db.VarChar(6)
   status         MemberStatus @default(ACTIVE)
   nomineeDetails Json?        @map("nominee_details")
   bankDetails    Json?        @map("bank_details")

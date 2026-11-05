@@ -218,7 +218,7 @@ export const MemberDetailPage: React.FC<MemberDetailPageProps> = ({ memberId, on
                 </Badge>
               </div>
               <p className="text-xs text-slate-500 font-mono mt-0.5">
-                ID: {member.id} · Registered: {formatDate(member.createdAt)}
+                ID: {member.memberCode} · Registered: {formatDate(member.createdAt)}
               </p>
             </div>
           </div>
@@ -339,7 +339,7 @@ export const MemberDetailPage: React.FC<MemberDetailPageProps> = ({ memberId, on
             <div className="space-y-2 text-xs text-slate-600">
               <p>
                 <strong className="text-slate-800">KYC Type:</strong>{' '}
-                {member.bankDetails?.kycType || '-'}
+                {member.bankDetails?.kycType || ''}
               </p>
 
               <p>
