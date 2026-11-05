@@ -229,10 +229,12 @@ export const EnrollmentDetailPage: React.FC<EnrollmentDetailPageProps> = ({
     );
   }
 
-  // Financial integrity verification check
-  const calculatedBalanceDiff =
-    (enrollment.scheduledAmount || 0) -
-    ((enrollment.paidAmount || 0) + (enrollment.outstandingAmount || 0));
+  // Financial figures are derived by the payment-summary endpoint, not stored on Enrollment.
+  const totalScheduled = Number(paymentSummary?.totalScheduled ?? 0);
+  const totalPaid = Number(paymentSummary?.totalPaid ?? 0);
+  const totalOutstanding = Number(paymentSummary?.outstandingAmount ?? 0);
+  const advanceAmount = Math.max(0, totalPaid - totalScheduled);
+  const calculatedBalanceDiff = totalScheduled - (totalPaid + totalOutstanding);
   const isBalanceConsistent = Math.abs(calculatedBalanceDiff) < 0.05;
 
   const tabs = [
@@ -307,18 +309,14 @@ export const EnrollmentDetailPage: React.FC<EnrollmentDetailPageProps> = ({
               <span className="text-[10px] uppercase font-semibold text-slate-500 block">
                 Total Scheduled
               </span>
-              <span className="text-lg font-black text-slate-900">
-                {formatINR(enrollment.scheduledAmount)}
-              </span>
+              <span className="text-lg font-black text-slate-900">{formatINR(totalScheduled)}</span>
             </div>
 
             <div className="bg-emerald-50/60 p-3 rounded-md border border-emerald-200">
               <span className="text-[10px] uppercase font-semibold text-emerald-800 block">
                 Total Paid
               </span>
-              <span className="text-lg font-black text-emerald-900">
-                {formatINR(enrollment.paidAmount)}
-              </span>
+              <span className="text-lg font-black text-emerald-900">{formatINR(totalPaid)}</span>
             </div>
 
             <div className="bg-rose-50/60 p-3 rounded-md border border-rose-200">
@@ -326,7 +324,7 @@ export const EnrollmentDetailPage: React.FC<EnrollmentDetailPageProps> = ({
                 Outstanding Due
               </span>
               <span className="text-lg font-black text-rose-900">
-                {formatINR(enrollment.outstandingAmount)}
+                {formatINR(totalOutstanding)}
               </span>
             </div>
           </div>
@@ -347,9 +345,9 @@ export const EnrollmentDetailPage: React.FC<EnrollmentDetailPageProps> = ({
               </span>
             )}
           </div>
-          {enrollment.advanceAmount && enrollment.advanceAmount > 0 ? (
+          {advanceAmount > 0 ? (
             <span className="text-xs text-sky-700 font-semibold">
-              Advance Credit: {formatINR(enrollment.advanceAmount)}
+              Advance Credit: {formatINR(advanceAmount)}
             </span>
           ) : null}
         </div>
@@ -405,7 +403,7 @@ export const EnrollmentDetailPage: React.FC<EnrollmentDetailPageProps> = ({
                       {formatINR(inst.paidAmount)}
                     </TableCell>
                     <TableCell className="text-xs font-semibold text-rose-700">
-                      {formatINR(inst.outstandingAmount)}
+                      {formatINR(inst.remainingAmount)}
                     </TableCell>
                     <TableCell className="text-right">
                       <Badge

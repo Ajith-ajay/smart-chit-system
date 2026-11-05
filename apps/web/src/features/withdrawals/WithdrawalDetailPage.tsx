@@ -479,7 +479,6 @@ export const WithdrawalDetailPage: React.FC<WithdrawalDetailPageProps> = ({
             required
           >
             <option value="BANK_TRANSFER">Bank Transfer (NEFT/RTGS/IMPS)</option>
-            <option value="CHEQUE">Cheque</option>
             <option value="UPI">UPI</option>
             <option value="CASH">Cash</option>
           </Select>

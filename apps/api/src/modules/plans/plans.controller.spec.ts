@@ -18,13 +18,13 @@ describe('PlansController', () => {
     controller = module.get<PlansController>(PlansController);
   });
 
-  it('delegates plan listing', () => {
-    controller.findAll();
+  it('delegates plan listing', async () => {
+    await controller.findAll();
     expect(service.findAll).toHaveBeenCalledTimes(1);
   });
 
-  it('delegates plan detail lookup', () => {
-    controller.findOne('plan-id');
+  it('delegates plan detail lookup', async () => {
+    await controller.findOne('plan-id');
     expect(service.findOne).toHaveBeenCalledWith('plan-id');
   });
 });

@@ -17,6 +17,8 @@ import { RolesGuard } from '@/modules/auth/guards/roles.guard';
 import { Roles } from '@/modules/auth/decorators/roles.decorator';
 import { CreateEnrollmentDto } from './dto/create-enrollment.dto';
 import { CatchUpEnrollmentDto } from './dto/catch-up-enrollment.dto';
+import { CatchUpPreviewDto } from './dto/catch-up-preview.dto';
+import { EnrollmentQueryDto } from './dto/enrollment-query.dto';
 import { EnrollmentsService } from './enrollments.service';
 
 @ApiTags('Enrollments')
@@ -57,16 +59,15 @@ export class EnrollmentsController {
   })
   catchUpPreview(
     @Param('memberId', new ParseUUIDPipe()) memberId: string,
-    @Query('batchId', new ParseUUIDPipe()) batchId: string,
-    @Query('batchPlanId', new ParseUUIDPipe()) batchPlanId: string,
+    @Query() dto: CatchUpPreviewDto,
   ) {
-    return this.service.catchUpPreview(memberId, batchId, batchPlanId);
+    return this.service.catchUpPreview(memberId, dto.batchId, dto.batchPlanId);
   }
 
   @Post('members/:memberId/catch-up')
   @ApiOperation({
     summary:
-      'Enroll into a RUNNING batch and collect all required catch-up installments atomically',
+      'Enroll into a RUNNING batch and collect required catch-up installments atomically',
   })
   catchUp(
     @Param('memberId', new ParseUUIDPipe()) memberId: string,
@@ -74,5 +75,19 @@ export class EnrollmentsController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     return this.service.catchUp(memberId, dto, user.id);
+  }
+
+  @Get()
+  @ApiOperation({
+    summary: 'List enrollments with pagination, search and filters',
+  })
+  findAll(@Query() query: EnrollmentQueryDto) {
+    return this.service.findAll(query);
+  }
+
+  @Get(':id')
+  @ApiOperation({ summary: 'Get enrollment details by ID' })
+  findOne(@Param('id', new ParseUUIDPipe()) id: string) {
+    return this.service.findOne(id);
   }
 }

@@ -14,6 +14,7 @@ import { randomUUID } from 'node:crypto';
 import { CreateEnrollmentDto } from './dto/create-enrollment.dto';
 import { CatchUpEnrollmentDto } from './dto/catch-up-enrollment.dto';
 import { EnrollmentsRepository } from './enrollments.repository';
+import { EnrollmentQueryDto } from './dto/enrollment-query.dto';
 
 @Injectable()
 export class EnrollmentsService {
@@ -21,6 +22,18 @@ export class EnrollmentsService {
 
   async availableBatches() {
     return this.repository.findAvailableBatches();
+  }
+
+  async findAll(query: EnrollmentQueryDto) {
+    return this.repository.findAll(query);
+  }
+
+  async findOne(id: string) {
+    const enrollment = await this.repository.findById(id);
+    if (!enrollment) {
+      throw new NotFoundException(`Enrollment with ID ${id} not found`);
+    }
+    return enrollment;
   }
 
   async forMember(memberId: string) {

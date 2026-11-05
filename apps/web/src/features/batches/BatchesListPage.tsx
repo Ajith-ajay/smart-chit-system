@@ -50,9 +50,9 @@ export const BatchesListPage: React.FC<BatchesListPageProps> = ({ onNavigate }) 
         return <Badge variant="success">COMPLETED</Badge>;
       case 'CANCELLED':
         return <Badge variant="error">CANCELLED</Badge>;
-      case 'PLANNED':
+      case 'DRAFT':
       default:
-        return <Badge variant="outline">PLANNED</Badge>;
+        return <Badge variant="outline">DRAFT</Badge>;
     }
   };
 
@@ -110,7 +110,7 @@ export const BatchesListPage: React.FC<BatchesListPageProps> = ({ onNavigate }) 
             className="w-full py-1.5 px-3 text-xs rounded-md border border-slate-300 bg-white focus:outline-none focus:ring-1 focus:ring-slate-900"
           >
             <option value="all">All Batches</option>
-            <option value="PLANNED">Planned</option>
+            <option value="DRAFT">Draft</option>
             <option value="RUNNING">Running</option>
             <option value="COMPLETED">Completed</option>
             <option value="CANCELLED">Cancelled</option>

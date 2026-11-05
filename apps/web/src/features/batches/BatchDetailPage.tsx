@@ -330,7 +330,7 @@ export const BatchDetailPage: React.FC<BatchDetailPageProps> = ({
                       {bp.enrolledSeats || 0} enrolled {bp.totalSeats ? `/ ${bp.totalSeats}` : ''}
                     </TableCell>
                     <TableCell className="text-right">
-                      {batch.status === 'PLANNED' && (
+                      {batch.status === 'DRAFT' && (
                         <Button
                           size="sm"
                           variant="ghost"
@@ -479,14 +479,14 @@ export const BatchDetailPage: React.FC<BatchDetailPageProps> = ({
                     <Play className="w-3.5 h-3.5 text-sky-600" /> Start Batch
                   </h4>
                   <p className="text-[11px] text-slate-500 mt-1">
-                    Transitions status from PLANNED to RUNNING. Initializes installment #1.
+                    Transitions status from DRAFT to RUNNING. Initializes installment #1.
                   </p>
                 </div>
                 <div className="mt-4">
                   <Button
                     size="sm"
                     variant="primary"
-                    disabled={batch.status !== 'PLANNED'}
+                    disabled={batch.status !== 'DRAFT'}
                     onClick={() => setLifecycleAction('start')}
                     className="w-full"
                   >

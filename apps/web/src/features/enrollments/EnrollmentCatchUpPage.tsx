@@ -17,7 +17,7 @@ import {
   TableHead,
   TableCell,
 } from '@/components/ui/Table';
-import { formatINR, formatDate } from '@/lib/utils';
+import { formatINR, formatDate, toInputDate } from '@/lib/utils';
 import { extractErrorMessage } from '@/lib/api/client';
 import { CatchUpPreview, Batch, Member, PaymentMethod } from '@/types';
 import { ArrowLeft, Clock, ShieldCheck, CheckCircle2, CreditCard } from 'lucide-react';
@@ -32,6 +32,7 @@ export const EnrollmentCatchUpPage: React.FC<EnrollmentCatchUpPageProps> = ({ on
   const [batchId, setBatchId] = useState('');
   const [batchPlanId, setBatchPlanId] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('CASH');
+  const [paymentDate, setPaymentDate] = useState(toInputDate(new Date()));
   const [reference, setReference] = useState('');
   const [notes, setNotes] = useState('');
   const [confirmed, setConfirmed] = useState(false);
@@ -41,7 +42,7 @@ export const EnrollmentCatchUpPage: React.FC<EnrollmentCatchUpPageProps> = ({ on
   const { data: members = [] } = useQuery({
     queryKey: ['members-dropdown'],
     queryFn: async () => {
-      const res = await membersApi.getAll({ limit: 100, isActive: true });
+      const res = await membersApi.getAll({ limit: 100, status: 'ACTIVE' });
       return Array.isArray(res) ? res : res.data || [];
     },
   });
@@ -56,7 +57,7 @@ export const EnrollmentCatchUpPage: React.FC<EnrollmentCatchUpPageProps> = ({ on
   });
 
   const selectedBatch = batches.find((b) => b.id === batchId);
-  const availableBatchPlans = selectedBatch?.batchPlans || [];
+  const availableBatchPlans = selectedBatch?.batchPlans || selectedBatch?.plans || [];
 
   // Query Catch-Up Preview from Backend API
   const {
@@ -77,19 +78,15 @@ export const EnrollmentCatchUpPage: React.FC<EnrollmentCatchUpPageProps> = ({ on
         batchId,
         batchPlanId,
         paymentMethod,
-        reference: reference.trim() || undefined,
-        notes: notes.trim() || undefined,
+        paymentDate,
+        referenceNumber: reference.trim() || undefined,
+        remarks: notes.trim() || undefined,
       }),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['enrollments'] });
       queryClient.invalidateQueries({ queryKey: ['payments'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard-metrics'] });
-      const enrollmentId = data.enrollment?.id;
-      if (enrollmentId) {
-        onNavigate(`/enrollments/${enrollmentId}`);
-      } else {
-        onNavigate('/enrollments');
-      }
+      onNavigate(`/enrollments/${data.id}`);
     },
     onError: (err) => {
       setErrorMsg(extractErrorMessage(err));
@@ -222,9 +219,9 @@ export const EnrollmentCatchUpPage: React.FC<EnrollmentCatchUpPageProps> = ({ on
                     Missed Installments Covered
                   </span>
                   <span className="text-lg font-bold text-slate-900">
-                    {preview.missedInstallments?.length > 0
-                      ? `#${preview.missedInstallments.join(', #')}`
-                      : 'None (Starting from current)'}
+                    {preview.installments.length > 0
+                      ? `#${preview.installments.map((item) => item.installmentNumber).join(', #')}`
+                      : 'None'}
                   </span>
                 </div>
                 <div className="border-l border-slate-200 pl-4">
@@ -232,13 +229,13 @@ export const EnrollmentCatchUpPage: React.FC<EnrollmentCatchUpPageProps> = ({ on
                     Authoritative Catch-up Due
                   </span>
                   <span className="text-2xl font-black text-emerald-700">
-                    {formatINR(preview.totalCatchUpAmount)}
+                    {formatINR(preview.catchUpAmount)}
                   </span>
                 </div>
               </div>
 
               {/* Installment breakdown table */}
-              {preview.breakdown && preview.breakdown.length > 0 && (
+              {preview.installments.length > 0 && (
                 <div>
                   <h4 className="text-xs font-semibold text-slate-700 mb-2">
                     Catch-up Payment Breakdown:
@@ -252,7 +249,7 @@ export const EnrollmentCatchUpPage: React.FC<EnrollmentCatchUpPageProps> = ({ on
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {preview.breakdown.map((item) => (
+                      {preview.installments.map((item) => (
                         <TableRow key={item.installmentNumber}>
                           <TableCell className="font-mono text-xs font-semibold text-slate-900">
                             Installment #{item.installmentNumber}
@@ -261,7 +258,7 @@ export const EnrollmentCatchUpPage: React.FC<EnrollmentCatchUpPageProps> = ({ on
                             {formatDate(item.dueDate)}
                           </TableCell>
                           <TableCell className="text-right text-xs font-bold text-slate-900">
-                            {formatINR(item.scheduledAmount)}
+                            {formatINR(item.amount)}
                           </TableCell>
                         </TableRow>
                       ))}
@@ -285,12 +282,18 @@ export const EnrollmentCatchUpPage: React.FC<EnrollmentCatchUpPageProps> = ({ on
                     <option value="CASH">Cash</option>
                     <option value="UPI">UPI / GooglePay / PhonePe</option>
                     <option value="BANK_TRANSFER">Bank Transfer (NEFT/RTGS/IMPS)</option>
-                    <option value="CHEQUE">Cheque</option>
-                    <option value="ONLINE">Online Portal</option>
                   </Select>
 
                   <Input
-                    label="Transaction Reference / Cheque #"
+                    label="Payment Date"
+                    type="date"
+                    value={paymentDate}
+                    onChange={(e) => setPaymentDate(e.target.value)}
+                    required
+                  />
+
+                  <Input
+                    label="Transaction Reference"
                     placeholder="e.g. UPI-1234567890"
                     value={reference}
                     onChange={(e) => setReference(e.target.value)}
@@ -317,8 +320,8 @@ export const EnrollmentCatchUpPage: React.FC<EnrollmentCatchUpPageProps> = ({ on
                   />
                   <label htmlFor="catchup-confirm" className="cursor-pointer select-none">
                     I confirm that the member is paying the exact backend catch-up requirement of{' '}
-                    <strong>{formatINR(preview.totalCatchUpAmount)}</strong> to settle installments
-                    up to current cycle.
+                    <strong>{formatINR(preview.catchUpAmount)}</strong> to settle installments up to
+                    current cycle.
                   </label>
                 </div>
 

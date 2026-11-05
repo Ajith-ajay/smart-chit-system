@@ -6,7 +6,6 @@ import { batchesApi } from '@/lib/api/batches';
 import { PageHeader } from '@/components/common/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
-import { Input } from '@/components/ui/Input';
 import { Card } from '@/components/ui/Card';
 import { Alert } from '@/components/ui/Alert';
 import { formatINR } from '@/lib/utils';
@@ -23,14 +22,13 @@ export const EnrollmentCreatePage: React.FC<EnrollmentCreatePageProps> = ({ onNa
   const [memberId, setMemberId] = useState('');
   const [batchId, setBatchId] = useState('');
   const [batchPlanId, setBatchPlanId] = useState('');
-  const [startInstallment, setStartInstallment] = useState('1');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   // Fetch members
   const { data: membersData } = useQuery({
     queryKey: ['members-dropdown'],
     queryFn: async () => {
-      const res = await membersApi.getAll({ limit: 100, isActive: true });
+      const res = await membersApi.getAll({ limit: 100, status: 'ACTIVE' });
       return Array.isArray(res) ? res : res.data || [];
     },
   });
@@ -48,10 +46,10 @@ export const EnrollmentCreatePage: React.FC<EnrollmentCreatePageProps> = ({ onNa
 
   // Currently selected batch
   const selectedBatch = batchesList.find((b) => b.id === batchId);
-  const availableBatchPlans = selectedBatch?.batchPlans || [];
+  const availableBatchPlans = selectedBatch?.batchPlans || selectedBatch?.plans || [];
 
   const mutation = useMutation({
-    mutationFn: (dto: CreateEnrollmentDto) => enrollmentsApi.create(dto),
+    mutationFn: (dto: CreateEnrollmentDto) => enrollmentsApi.create(memberId, dto),
     onSuccess: (newEnrollment) => {
       queryClient.invalidateQueries({ queryKey: ['enrollments'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard-metrics'] });
@@ -79,12 +77,7 @@ export const EnrollmentCreatePage: React.FC<EnrollmentCreatePageProps> = ({ onNa
       return;
     }
 
-    mutation.mutate({
-      memberId,
-      batchId,
-      batchPlanId,
-      startInstallment: parseInt(startInstallment, 10) || 1,
-    });
+    mutation.mutate({ batchId, batchPlanId });
   };
 
   return (
@@ -120,7 +113,11 @@ export const EnrollmentCreatePage: React.FC<EnrollmentCreatePageProps> = ({ onNa
             <option value="">-- Choose Member --</option>
             {membersList.map((m) => (
               <option key={m.id} value={m.id}>
-                {m.firstName} {m.lastName} ({m.phone}) - {m.memberCode || m.id.slice(0, 8)}
+                {m.firstName} {m.lastName} ({m.phone}) -{' '}
+                {
+                  // m.memberCode ||
+                  m.id.slice(0, 8)
+                }
               </option>
             ))}
           </Select>
@@ -135,11 +132,13 @@ export const EnrollmentCreatePage: React.FC<EnrollmentCreatePageProps> = ({ onNa
             required
           >
             <option value="">-- Choose Batch --</option>
-            {batchesList.map((b) => (
-              <option key={b.id} value={b.id}>
-                {b.name} (Status: {b.status}, Current: #{b.currentInstallment || 0})
-              </option>
-            ))}
+            {batchesList
+              .filter((batch) => batch.status === 'DRAFT')
+              .map((b) => (
+                <option key={b.id} value={b.id}>
+                  {b.name} (Status: {b.status})
+                </option>
+              ))}
           </Select>
 
           <Select
@@ -164,17 +163,6 @@ export const EnrollmentCreatePage: React.FC<EnrollmentCreatePageProps> = ({ onNa
               </option>
             ))}
           </Select>
-
-          <Input
-            label="Start Installment Number"
-            type="number"
-            min={1}
-            max={20}
-            value={startInstallment}
-            onChange={(e) => setStartInstallment(e.target.value)}
-            helperText="Default is installment #1. If batch has already run, consider Catch-up workflow."
-            required
-          />
 
           <div className="rounded-md bg-sky-50 border border-sky-200 p-3 text-xs text-sky-800 flex items-start gap-2">
             <Info className="w-4 h-4 text-sky-600 shrink-0 mt-0.5" />

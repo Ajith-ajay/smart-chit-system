@@ -18,10 +18,30 @@ export const paymentsApi = {
   },
 
   getEnrollmentSummary: async (enrollmentId: string): Promise<PaymentSummary> => {
-    const res = await apiClient.get<ApiResponse<PaymentSummary>>(
+    type SummaryResponse = Omit<PaymentSummary, 'installments'> & {
+      installments: Array<Omit<PaymentSummary['installments'][number], 'status'>>;
+    };
+    const res = await apiClient.get<ApiResponse<SummaryResponse>>(
       `/payments/enrollments/${enrollmentId}/summary`,
     );
-    return res.data.data;
+    const summary = res.data.data;
+    return {
+      ...summary,
+      installments: summary.installments.map((installment) => {
+        const overdue =
+          !installment.isPaid &&
+          Number(installment.paidAmount) === 0 &&
+          new Date(installment.dueDate).getTime() < Date.now();
+        const status = installment.isPaid
+          ? 'PAID'
+          : Number(installment.paidAmount) > 0
+            ? 'PARTIAL'
+            : overdue
+              ? 'OVERDUE'
+              : 'PENDING';
+        return { ...installment, status };
+      }),
+    };
   },
 
   getById: async (id: string): Promise<Payment> => {
