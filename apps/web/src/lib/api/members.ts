@@ -5,7 +5,7 @@ export interface MemberQueryParams {
   page?: number;
   limit?: number;
   search?: string;
-  isActive?: boolean;
+  status?: 'ACTIVE' | 'INACTIVE';
 }
 
 export interface MembersResponse {

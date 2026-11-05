@@ -113,11 +113,7 @@ export const EnrollmentCreatePage: React.FC<EnrollmentCreatePageProps> = ({ onNa
             <option value="">-- Choose Member --</option>
             {membersList.map((m) => (
               <option key={m.id} value={m.id}>
-                {m.firstName} {m.lastName} ({m.phone}) -{' '}
-                {
-                  // m.memberCode ||
-                  m.id.slice(0, 8)
-                }
+                {m.firstName} {m.lastName} ({m.phone}) - {m.memberCode || m.id.slice(0, 8)}
               </option>
             ))}
           </Select>

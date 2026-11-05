@@ -56,29 +56,38 @@ export interface ResetPasswordDto {
 
 export interface Member {
   id: string;
-  memberCode?: string;
+  memberCode: string;
   firstName: string;
   lastName: string;
   phone: string;
-  email?: string | null;
-  address?: string | null;
-  city?: string | null;
-  state?: string | null;
-  pincode?: string | null;
-  nomineeName?: string | null;
-  nomineeRelation?: string | null;
-  nomineePhone?: string | null;
-  bankName?: string | null;
-  accountNumber?: string | null;
-  ifscCode?: string | null;
-  branchName?: string | null;
-  kycStatus?: 'PENDING' | 'VERIFIED' | 'REJECTED';
-  kycType?: string | null;
-  kycNumber?: string | null;
-  isActive: boolean;
+  email: string | null;
+  address: string | null;
+  city: string | null;
+  state: string | null;
+  pincode: string | null;
+
+  status: 'ACTIVE' | 'INACTIVE';
+
+  nomineeDetails: {
+    name: string;
+    phone: string;
+    relation: string;
+  } | null;
+
+  bankDetails: {
+    kycType: string;
+    bankName: string;
+    ifscCode: string;
+    kycNumber: string;
+    branchName: string;
+    accountNumber: string;
+  } | null;
+
+  remarks: string | null;
+
   createdAt: string;
   updatedAt: string;
-  enrollmentsCount?: number;
+  deletedAt: string | null;
 }
 
 export interface CreateMemberDto {
@@ -90,18 +99,28 @@ export interface CreateMemberDto {
   city?: string;
   state?: string;
   pincode?: string;
-  nomineeName?: string;
-  nomineeRelation?: string;
-  nomineePhone?: string;
-  bankName?: string;
-  accountNumber?: string;
-  ifscCode?: string;
-  branchName?: string;
-  kycType?: string;
-  kycNumber?: string;
+
+  nomineeDetails?: {
+    name: string;
+    relation: string;
+    phone: string;
+  };
+
+  bankDetails?: {
+    bankName: string;
+    accountNumber: string;
+    ifscCode: string;
+    branchName?: string;
+    kycType?: string;
+    kycNumber?: string;
+  };
+
+  remarks?: string;
 }
 
-export type UpdateMemberDto = Partial<CreateMemberDto> & { isActive?: boolean };
+export type UpdateMemberDto = Partial<CreateMemberDto> & {
+  status?: 'ACTIVE' | 'INACTIVE';
+};
 
 // ------------------------------------------
 // Plan Types
@@ -126,7 +145,7 @@ export interface PlanScheduleItem {
 // Batch Types
 // ------------------------------------------
 
-export type BatchStatus = 'PLANNED' | 'RUNNING' | 'COMPLETED' | 'CANCELLED';
+export type BatchStatus = 'DRAFT' | 'RUNNING' | 'COMPLETED' | 'CANCELLED';
 
 export interface Batch {
   id: string;
@@ -139,6 +158,7 @@ export interface Batch {
   totalInstallments: number;
   notes?: string | null;
   batchPlans?: BatchPlan[];
+  plans?: BatchPlan[];
   enrollmentsCount?: number;
   totalCollected?: number;
   totalWithdrawn?: number;
@@ -207,7 +227,7 @@ export interface LifecycleResult {
 // Enrollment Types
 // ------------------------------------------
 
-export type EnrollmentStatus = 'ACTIVE' | 'COMPLETED' | 'DEFAULTED' | 'CANCELLED';
+export type EnrollmentStatus = 'ACTIVE' | 'COMPLETED' | 'CANCELLED';
 
 export interface Enrollment {
   id: string;
@@ -218,12 +238,12 @@ export interface Enrollment {
   batch?: Batch;
   batchPlanId: string;
   batchPlan?: BatchPlan;
-  startInstallment: number;
   status: EnrollmentStatus;
-  scheduledAmount: number;
-  paidAmount: number;
-  outstandingAmount: number;
-  advanceAmount?: number;
+  remarks?: string | null;
+  scheduledAmount?: number | string;
+  paidAmount?: number | string;
+  outstandingAmount?: number | string;
+  advanceAmount?: number | string;
   withdrawalEligibility?: {
     isEligible: boolean;
     reason?: string;
@@ -234,39 +254,41 @@ export interface Enrollment {
 }
 
 export interface CreateEnrollmentDto {
-  memberId: string;
   batchId: string;
   batchPlanId: string;
-  startInstallment?: number;
+  remarks?: string;
 }
 
 export interface CatchUpPreview {
   memberId: string;
   batchId: string;
   batchPlanId: string;
-  currentInstallment: number;
-  missedInstallments: number[];
-  totalCatchUpAmount: number;
-  breakdown: Array<{
+  batch: { id: string; name: string; status: string };
+  plan: { id: string; name: string; totalAmount: number | string };
+  currentInstallment: number | null;
+  installments: Array<{
+    id: string;
     installmentNumber: number;
-    scheduledAmount: number;
     dueDate: string;
+    amount: number | string;
   }>;
+  catchUpAmount: number | string;
 }
 
 export interface CatchUpDto {
   batchId: string;
   batchPlanId: string;
-  paymentMethod?: PaymentMethod;
-  reference?: string;
-  notes?: string;
+  paymentMethod: PaymentMethod;
+  paymentDate: string;
+  referenceNumber?: string;
+  remarks?: string;
 }
 
 // ------------------------------------------
 // Payment Types
 // ------------------------------------------
 
-export type PaymentMethod = 'CASH' | 'UPI' | 'BANK_TRANSFER' | 'CHEQUE' | 'ONLINE';
+export type PaymentMethod = 'CASH' | 'UPI' | 'BANK_TRANSFER';
 export type PaymentStatus = 'SUCCESS' | 'REVERSED' | 'PENDING' | 'FAILED';
 export type AllocationMode = 'AUTOMATIC' | 'MANUAL';
 
@@ -320,19 +342,21 @@ export interface ReversePaymentDto {
 
 export interface PaymentSummary {
   enrollmentId: string;
-  totalScheduled: number;
-  totalPaid: number;
-  totalOutstanding: number;
-  advanceAmount: number;
-  completedInstallments: number;
-  partiallyPaidInstallments: number;
-  pendingInstallments: number;
+  plan: { id: string; name: string; totalAmount: number | string; installmentCount: number };
+  totalScheduled: number | string;
+  totalPaid: number | string;
+  outstandingAmount: number | string;
+  paidInstallments: number;
+  remainingInstallments: number;
   installments: Array<{
+    id: string;
     installmentNumber: number;
     dueDate: string;
-    scheduledAmount: number;
-    paidAmount: number;
-    outstandingAmount: number;
+    scheduledAmount: number | string;
+    paidAmount: number | string;
+    remainingAmount: number | string;
+    scheduleStatus: string;
+    isPaid: boolean;
     status: 'PAID' | 'PARTIAL' | 'PENDING' | 'OVERDUE';
   }>;
 }

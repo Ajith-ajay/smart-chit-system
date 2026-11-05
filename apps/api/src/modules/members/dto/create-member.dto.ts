@@ -49,11 +49,34 @@ export class CreateMemberDto {
       bankName: 'State Bank of India',
       accountNumber: '12345678901',
       ifscCode: 'SBIN0001234',
+      branchName: 'MG Road Branch',
+      kycType: 'AADHAAR',
+      kycNumber: '1234 5678 9012',
     },
   })
   @IsObject()
   @IsOptional()
   bankDetails?: Prisma.InputJsonObject;
+
+  @ApiProperty({ example: '74/A2 Annanagar 3rd street' })
+  @IsString()
+  @IsNotEmpty()
+  address!: string;
+
+  @ApiProperty({ example: 'Thoothukudi' })
+  @IsString()
+  @IsNotEmpty()
+  city!: string;
+
+  @ApiProperty({ example: 'Tamil Nadu' })
+  @IsString()
+  @IsNotEmpty()
+  state!: string;
+
+  @ApiProperty({ example: '628008' })
+  @IsString()
+  @IsNotEmpty()
+  pincode!: string;
 
   @ApiPropertyOptional({ example: 'Regular customer' })
   @IsString()

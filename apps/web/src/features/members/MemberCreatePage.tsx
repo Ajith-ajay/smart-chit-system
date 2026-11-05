@@ -26,15 +26,23 @@ export const MemberCreatePage: React.FC<MemberCreatePageProps> = ({ onNavigate }
     city: '',
     state: '',
     pincode: '',
-    nomineeName: '',
-    nomineeRelation: '',
-    nomineePhone: '',
-    bankName: '',
-    accountNumber: '',
-    ifscCode: '',
-    branchName: '',
-    kycType: 'AADHAAR',
-    kycNumber: '',
+
+    nomineeDetails: {
+      name: '',
+      relation: '',
+      phone: '',
+    },
+
+    bankDetails: {
+      bankName: '',
+      accountNumber: '',
+      ifscCode: '',
+      branchName: '',
+      kycType: '',
+      kycNumber: '',
+    },
+
+    remarks: '',
   });
 
   const [formError, setFormError] = useState<string | null>(null);
@@ -53,7 +61,39 @@ export const MemberCreatePage: React.FC<MemberCreatePageProps> = ({ onNavigate }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+
+    if (name.startsWith('nomineeDetails.')) {
+      const field = name.split('.')[1] as keyof NonNullable<CreateMemberDto['nomineeDetails']>;
+
+      setFormData((prev) => ({
+        ...prev,
+        nomineeDetails: {
+          ...prev.nomineeDetails,
+          [field]: value,
+        },
+      }));
+
+      return;
+    }
+
+    if (name.startsWith('bankDetails.')) {
+      const field = name.split('.')[1] as keyof NonNullable<CreateMemberDto['bankDetails']>;
+
+      setFormData((prev) => ({
+        ...prev,
+        bankDetails: {
+          ...prev.bankDetails,
+          [field]: value,
+        },
+      }));
+
+      return;
+    }
+
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -180,24 +220,25 @@ export const MemberCreatePage: React.FC<MemberCreatePageProps> = ({ onNavigate }
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <Input
               label="Nominee Name"
-              name="nomineeName"
-              placeholder="e.g. Sunita Kumar"
-              value={formData.nomineeName || ''}
+              name="nomineeDetails.name"
+              placeholder="Ajith"
+              value={formData.nomineeDetails?.name || ''}
               onChange={handleChange}
             />
+
             <Input
               label="Relationship"
-              name="nomineeRelation"
-              placeholder="e.g. Spouse / Brother"
-              value={formData.nomineeRelation || ''}
+              name="nomineeDetails.relation"
+              placeholder="Brother/Sister/Gaurdian"
+              value={formData.nomineeDetails?.relation || ''}
               onChange={handleChange}
             />
+
             <Input
               label="Nominee Phone"
-              name="nomineePhone"
-              type="tel"
-              placeholder="e.g. 9876543211"
-              value={formData.nomineePhone || ''}
+              name="nomineeDetails.phone"
+              placeholder="+919047251565"
+              value={formData.nomineeDetails?.phone || ''}
               onChange={handleChange}
             />
           </div>
@@ -213,38 +254,39 @@ export const MemberCreatePage: React.FC<MemberCreatePageProps> = ({ onNavigate }
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Input
               label="Bank Name"
-              name="bankName"
+              name="bankDetails.bankName"
               placeholder="e.g. State Bank of India"
-              value={formData.bankName || ''}
+              value={formData.bankDetails?.bankName || ''}
               onChange={handleChange}
             />
             <Input
               label="Account Number"
-              name="accountNumber"
+              name="bankDetails.accountNumber"
               placeholder="e.g. 10023456789"
-              value={formData.accountNumber || ''}
+              value={formData.bankDetails?.accountNumber || ''}
               onChange={handleChange}
             />
             <Input
               label="IFSC Code"
-              name="ifscCode"
+              name="bankDetails.ifscCode"
               placeholder="e.g. SBIN0001234"
-              value={formData.ifscCode || ''}
+              value={formData.bankDetails?.ifscCode || ''}
               onChange={handleChange}
             />
             <Input
               label="Branch Name"
-              name="branchName"
+              name="bankDetails.branchName"
               placeholder="e.g. MG Road Branch"
-              value={formData.branchName || ''}
+              value={formData.bankDetails?.branchName || ''}
               onChange={handleChange}
             />
             <Select
               label="KYC Document Type"
-              name="kycType"
-              value={formData.kycType || 'AADHAAR'}
+              name="bankDetails.kycType"
+              value={formData.bankDetails?.kycType || ''}
               onChange={handleChange}
               options={[
+                { label: 'Select KYC Type', value: '' },
                 { label: 'Aadhaar Card', value: 'AADHAAR' },
                 { label: 'PAN Card', value: 'PAN' },
                 { label: 'Passport', value: 'PASSPORT' },
@@ -254,12 +296,22 @@ export const MemberCreatePage: React.FC<MemberCreatePageProps> = ({ onNavigate }
             />
             <Input
               label="KYC Document Number"
-              name="kycNumber"
+              name="bankDetails.kycNumber"
               placeholder="e.g. 1234 5678 9012"
-              value={formData.kycNumber || ''}
+              value={formData.bankDetails?.kycNumber || ''}
               onChange={handleChange}
             />
           </div>
+        </Card>
+
+        <Card>
+          <Input
+            label="Remark (optional)"
+            name="remarks"
+            placeholder="Add any remarks here..."
+            value={formData?.remarks || ''}
+            onChange={handleChange}
+          />
         </Card>
 
         <div className="flex items-center justify-end gap-3 pt-3">

@@ -30,11 +30,18 @@ export class MembersService {
       }
     }
 
+    const memberCode = await this.membersRepository.generateMemberCode();
+
     return this.membersRepository.create({
+      memberCode,
       firstName: dto.firstName,
       lastName: dto.lastName,
       phone: dto.phone,
       email: dto.email || null,
+      address: dto.address || null,
+      city: dto.city || null,
+      state: dto.state || null,
+      pincode: dto.pincode || null,
       nomineeDetails: dto.nomineeDetails ?? Prisma.JsonNull,
       bankDetails: dto.bankDetails ?? Prisma.JsonNull,
       remarks: dto.remarks || null,
