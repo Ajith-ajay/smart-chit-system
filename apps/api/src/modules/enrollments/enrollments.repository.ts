@@ -6,6 +6,7 @@ import {
   PaymentStatus,
   Prisma,
 } from '@prisma/client';
+import { EnrollmentQueryDto } from './dto/enrollment-query.dto';
 
 @Injectable()
 export class EnrollmentsRepository {
@@ -73,6 +74,149 @@ export class EnrollmentsRepository {
           select: { id: true, firstName: true, lastName: true, phone: true },
         },
         batch: { include: { plans: { include: { planTemplate: true } } } },
+        batchPlan: { include: { planTemplate: true } },
+      },
+    });
+  }
+
+  async findAll(query: EnrollmentQueryDto) {
+    const {
+      page = 1,
+      limit = 20,
+      search,
+      memberId,
+      batchId,
+      batchPlanId,
+      status,
+    } = query;
+    const where: Prisma.EnrollmentWhereInput = {};
+
+    if (memberId) where.memberId = memberId;
+    if (batchId) where.batchId = batchId;
+    if (batchPlanId) where.batchPlanId = batchPlanId;
+    if (status) where.status = status;
+
+    const normalizedSearch = search?.trim();
+    if (normalizedSearch) {
+      where.OR = [
+        {
+          enrollmentNumber: { contains: normalizedSearch, mode: 'insensitive' },
+        },
+        {
+          member: {
+            is: {
+              OR: [
+                {
+                  firstName: {
+                    contains: normalizedSearch,
+                    mode: 'insensitive',
+                  },
+                },
+                {
+                  lastName: { contains: normalizedSearch, mode: 'insensitive' },
+                },
+                { phone: { contains: normalizedSearch, mode: 'insensitive' } },
+              ],
+            },
+          },
+        },
+      ];
+    }
+
+    const skip = (page - 1) * limit;
+    const [rows, total] = await Promise.all([
+      this.prisma.enrollment.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          member: {
+            select: { id: true, firstName: true, lastName: true, phone: true },
+          },
+          batch: {
+            select: { id: true, name: true, status: true, startDate: true },
+          },
+          batchPlan: {
+            include: {
+              planTemplate: {
+                select: {
+                  id: true,
+                  name: true,
+                  totalAmount: true,
+                  installmentCount: true,
+                },
+              },
+              batchInstallments: {
+                select: {
+                  id: true,
+                  installmentAmount: true,
+                  installmentNumber: true,
+                },
+                orderBy: { installmentNumber: 'asc' },
+              },
+            },
+          },
+          payments: {
+            where: { status: { not: PaymentStatus.REVERSED } },
+            select: { allocations: { select: { amount: true } } },
+          },
+        },
+      }),
+      this.prisma.enrollment.count({ where }),
+    ]);
+
+    const data = rows.map((enrollment) => {
+      const scheduledAmount = enrollment.batchPlan.batchInstallments.reduce(
+        (sum, installment) => sum.plus(installment.installmentAmount),
+        new Prisma.Decimal(0),
+      );
+      const paidAmount = enrollment.payments.reduce(
+        (paymentSum, payment) =>
+          payment.allocations.reduce(
+            (allocationSum, allocation) =>
+              allocationSum.plus(allocation.amount),
+            paymentSum,
+          ),
+        new Prisma.Decimal(0),
+      );
+
+      const { ...record } = enrollment;
+      return {
+        ...record,
+        scheduledAmount,
+        paidAmount,
+        outstandingAmount: Prisma.Decimal.max(
+          new Prisma.Decimal(0),
+          scheduledAmount.minus(paidAmount),
+        ),
+        advanceAmount: Prisma.Decimal.max(
+          new Prisma.Decimal(0),
+          paidAmount.minus(scheduledAmount),
+        ),
+      };
+    });
+
+    return {
+      data,
+      meta: { total, page, limit, totalPages: Math.ceil(total / limit) },
+    };
+  }
+
+  findById(id: string) {
+    return this.prisma.enrollment.findUnique({
+      where: { id },
+      include: {
+        member: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            phone: true,
+            email: true,
+          },
+        },
+        batch: true,
         batchPlan: { include: { planTemplate: true } },
       },
     });

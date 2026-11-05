@@ -16,10 +16,10 @@ import {
 import { Skeleton } from '@/components/ui/Skeleton';
 import { Alert } from '@/components/ui/Alert';
 import { EmptyState } from '@/components/common/EmptyState';
-import { formatINR, formatDate } from '@/lib/utils';
+import { formatINR } from '@/lib/utils';
 import { extractErrorMessage } from '@/lib/api/client';
 import { Enrollment } from '@/types';
-import { Plus, UserPlus, Eye, Search, CreditCard, ArrowRight, Clock } from 'lucide-react';
+import { Plus, Search, CreditCard, Clock } from 'lucide-react';
 
 export interface EnrollmentsListPageProps {
   onNavigate: (path: string) => void;
@@ -29,6 +29,7 @@ export const EnrollmentsListPage: React.FC<EnrollmentsListPageProps> = ({ onNavi
   const [selectedBatchId, setSelectedBatchId] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [page, setPage] = useState(1);
+  const [search, setSearch] = useState('');
 
   const { data: batches = [] } = useQuery({
     queryKey: ['batches-dropdown'],
@@ -39,17 +40,19 @@ export const EnrollmentsListPage: React.FC<EnrollmentsListPageProps> = ({ onNavi
   });
 
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ['enrollments', page, selectedBatchId, statusFilter],
+    queryKey: ['enrollments', page, selectedBatchId, statusFilter, search],
     queryFn: () =>
       enrollmentsApi.getAll({
         page,
         limit: 20,
+        search: search.trim() || undefined,
         batchId: selectedBatchId === 'all' ? undefined : selectedBatchId,
         status: statusFilter === 'all' ? undefined : statusFilter,
       }),
   });
 
-  const enrollmentsList: Enrollment[] = Array.isArray(data) ? data : data?.data || [];
+  const enrollmentsList: Enrollment[] = data?.data || [];
+  const totalPages = data?.meta.totalPages ?? 1;
 
   return (
     <div className="space-y-6">
@@ -91,6 +94,19 @@ export const EnrollmentsListPage: React.FC<EnrollmentsListPageProps> = ({ onNavi
 
       {/* Filter bar */}
       <div className="flex flex-col sm:flex-row items-center gap-3 bg-white p-3 rounded-lg border border-slate-200">
+        <div className="relative w-full sm:flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <input
+            type="search"
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
+            placeholder="Search enrollment, member name or phone"
+            className="w-full py-1.5 pl-9 pr-3 text-xs rounded-md border border-slate-300 bg-white focus:outline-none focus:ring-1 focus:ring-slate-900"
+          />
+        </div>
         <div className="w-full sm:w-60">
           <select
             value={selectedBatchId}
@@ -166,7 +182,7 @@ export const EnrollmentsListPage: React.FC<EnrollmentsListPageProps> = ({ onNavi
                         {enr.enrollmentNumber || `ENR-${enr.id.slice(0, 8)}`}
                       </button>
                       <span className="text-[10px] text-slate-400 font-mono">
-                        Start: #{enr.startInstallment || 1}
+                        Added {new Date(enr.createdAt).toLocaleDateString()}
                       </span>
                     </div>
                   </TableCell>
@@ -228,6 +244,32 @@ export const EnrollmentsListPage: React.FC<EnrollmentsListPageProps> = ({ onNavi
               ))}
             </TableBody>
           </Table>
+        </div>
+      )}
+
+      {!isLoading && enrollmentsList.length > 0 && (
+        <div className="flex items-center justify-between text-xs text-slate-600">
+          <span>
+            Page {page} of {totalPages}
+          </span>
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={page <= 1}
+              onClick={() => setPage((current) => current - 1)}
+            >
+              Previous
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={page >= totalPages}
+              onClick={() => setPage((current) => current + 1)}
+            >
+              Next
+            </Button>
+          </div>
         </div>
       )}
     </div>

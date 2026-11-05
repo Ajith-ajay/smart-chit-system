@@ -207,8 +207,6 @@ export const PaymentCreatePage: React.FC<PaymentCreatePageProps> = ({
               <option value="CASH">Cash Deposit</option>
               <option value="UPI">UPI (GooglePay / PhonePe / Paytm)</option>
               <option value="BANK_TRANSFER">Bank Transfer (NEFT / RTGS / IMPS)</option>
-              <option value="CHEQUE">Cheque</option>
-              <option value="ONLINE">Online Portal</option>
             </Select>
 
             <Input
@@ -312,7 +310,7 @@ export const PaymentCreatePage: React.FC<PaymentCreatePageProps> = ({
                           {formatINR(inst.paidAmount)}
                         </TableCell>
                         <TableCell className="text-xs text-rose-700 font-semibold">
-                          {formatINR(inst.outstandingAmount)}
+                          {formatINR(inst.remainingAmount)}
                         </TableCell>
                         <TableCell className="text-right">
                           <input

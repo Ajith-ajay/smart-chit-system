@@ -4,6 +4,7 @@ import { apiClient } from './client';
 export interface EnrollmentQueryParams {
   page?: number;
   limit?: number;
+  search?: string;
   memberId?: string;
   batchId?: string;
   batchPlanId?: string;
@@ -12,15 +13,17 @@ export interface EnrollmentQueryParams {
 
 export interface EnrollmentsResponse {
   data: Enrollment[];
-  total: number;
-  page: number;
-  limit: number;
-  totalPages?: number;
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
 }
 
 export const enrollmentsApi = {
-  getAll: async (params?: EnrollmentQueryParams): Promise<EnrollmentsResponse | Enrollment[]> => {
-    const res = await apiClient.get('/enrollments', { params });
+  getAll: async (params?: EnrollmentQueryParams): Promise<EnrollmentsResponse> => {
+    const res = await apiClient.get<ApiResponse<EnrollmentsResponse>>('/enrollments', { params });
     return res.data.data;
   },
 
@@ -29,8 +32,11 @@ export const enrollmentsApi = {
     return res.data.data;
   },
 
-  create: async (dto: CreateEnrollmentDto): Promise<Enrollment> => {
-    const res = await apiClient.post<ApiResponse<Enrollment>>('/enrollments', dto);
+  create: async (memberId: string, dto: CreateEnrollmentDto): Promise<Enrollment> => {
+    const res = await apiClient.post<ApiResponse<Enrollment>>(
+      `/enrollments/members/${memberId}`,
+      dto,
+    );
     return res.data.data;
   },
 
@@ -41,22 +47,16 @@ export const enrollmentsApi = {
   ): Promise<CatchUpPreview> => {
     const res = await apiClient.get<ApiResponse<CatchUpPreview>>(
       `/enrollments/members/${memberId}/catch-up-preview`,
-      {
-        params: { batchId, batchPlanId },
-      },
+      { params: { batchId, batchPlanId } },
     );
     return res.data.data;
   },
 
-  executeCatchUp: async (
-    memberId: string,
-    dto: CatchUpDto,
-  ): Promise<{
-    enrollment: Enrollment;
-    payment?: unknown;
-    message?: string;
-  }> => {
-    const res = await apiClient.post(`/enrollments/members/${memberId}/catch-up`, dto);
+  executeCatchUp: async (memberId: string, dto: CatchUpDto): Promise<Enrollment> => {
+    const res = await apiClient.post<ApiResponse<Enrollment>>(
+      `/enrollments/members/${memberId}/catch-up`,
+      dto,
+    );
     return res.data.data;
   },
 };

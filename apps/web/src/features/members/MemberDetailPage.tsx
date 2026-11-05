@@ -92,6 +92,7 @@ export const MemberDetailPage: React.FC<MemberDetailPageProps> = ({ memberId, on
 
   const openEditModal = () => {
     if (!member) return;
+
     setEditFormData({
       firstName: member.firstName,
       lastName: member.lastName,
@@ -101,17 +102,26 @@ export const MemberDetailPage: React.FC<MemberDetailPageProps> = ({ memberId, on
       city: member.city || '',
       state: member.state || '',
       pincode: member.pincode || '',
-      nomineeName: member.nomineeName || '',
-      nomineeRelation: member.nomineeRelation || '',
-      nomineePhone: member.nomineePhone || '',
-      bankName: member.bankName || '',
-      accountNumber: member.accountNumber || '',
-      ifscCode: member.ifscCode || '',
-      branchName: member.branchName || '',
-      kycType: member.kycType || 'AADHAAR',
-      kycNumber: member.kycNumber || '',
-      isActive: member.isActive,
+
+      nomineeDetails: {
+        name: member.nomineeDetails?.name || '',
+        relation: member.nomineeDetails?.relation || '',
+        phone: member.nomineeDetails?.phone || '',
+      },
+
+      bankDetails: {
+        bankName: member.bankDetails?.bankName || '',
+        accountNumber: member.bankDetails?.accountNumber || '',
+        ifscCode: member.bankDetails?.ifscCode || '',
+        branchName: member.bankDetails?.branchName || '',
+        kycType: member.bankDetails?.kycType || '',
+        kycNumber: member.bankDetails?.kycNumber || '',
+      },
+
+      remarks: member.remarks || '',
+      status: member.status,
     });
+
     setIsEditOpen(true);
   };
 
@@ -203,13 +213,12 @@ export const MemberDetailPage: React.FC<MemberDetailPageProps> = ({ memberId, on
                 <h1 className="text-xl font-bold text-slate-900">
                   {member.firstName} {member.lastName}
                 </h1>
-                <Badge variant={member.isActive ? 'success' : 'outline'}>
-                  {member.isActive ? 'Active' : 'Inactive'}
+                <Badge variant={member.status === 'ACTIVE' ? 'success' : 'outline'}>
+                  {member.status === 'ACTIVE' ? 'Active' : 'Inactive'}
                 </Badge>
               </div>
               <p className="text-xs text-slate-500 font-mono mt-0.5">
-                {member.memberCode || `ID: ${member.id}`} · Registered:{' '}
-                {formatDate(member.createdAt)}
+                ID: {member.id} · Registered: {formatDate(member.createdAt)}
               </p>
             </div>
           </div>
@@ -227,7 +236,7 @@ export const MemberDetailPage: React.FC<MemberDetailPageProps> = ({ memberId, on
             )}
             <div className="flex items-center gap-1.5 bg-slate-50 px-3 py-1.5 rounded border border-slate-200">
               <span className="font-semibold text-slate-700">KYC:</span>
-              <Badge
+              {/* <Badge
                 variant={
                   member.kycStatus === 'VERIFIED'
                     ? 'success'
@@ -237,7 +246,7 @@ export const MemberDetailPage: React.FC<MemberDetailPageProps> = ({ memberId, on
                 }
               >
                 {member.kycStatus || 'PENDING'}
-              </Badge>
+              </Badge> */}
             </div>
           </div>
         </div>
@@ -279,15 +288,17 @@ export const MemberDetailPage: React.FC<MemberDetailPageProps> = ({ memberId, on
             <div className="space-y-2 text-xs text-slate-600">
               <p>
                 <strong className="text-slate-800">Nominee Name:</strong>{' '}
-                {member.nomineeName || 'Not specified'}
+                {member.nomineeDetails?.name || 'Not specified'}
               </p>
+
               <p>
                 <strong className="text-slate-800">Relationship:</strong>{' '}
-                {member.nomineeRelation || '-'}
+                {member.nomineeDetails?.relation || '-'}
               </p>
+
               <p>
                 <strong className="text-slate-800">Nominee Contact:</strong>{' '}
-                {member.nomineePhone || '-'}
+                {member.nomineeDetails?.phone || '-'}
               </p>
             </div>
           </Card>
@@ -300,17 +311,22 @@ export const MemberDetailPage: React.FC<MemberDetailPageProps> = ({ memberId, on
             <div className="space-y-2 text-xs text-slate-600">
               <p>
                 <strong className="text-slate-800">Bank Name:</strong>{' '}
-                {member.bankName || 'Not specified'}
+                {member.bankDetails?.bankName || 'Not specified'}
               </p>
+
               <p>
                 <strong className="text-slate-800">Account Number:</strong>{' '}
-                {member.accountNumber || '-'}
+                {member.bankDetails?.accountNumber || '-'}
               </p>
+
               <p>
-                <strong className="text-slate-800">IFSC Code:</strong> {member.ifscCode || '-'}
+                <strong className="text-slate-800">IFSC Code:</strong>{' '}
+                {member.bankDetails?.ifscCode || '-'}
               </p>
+
               <p>
-                <strong className="text-slate-800">Branch:</strong> {member.branchName || '-'}
+                <strong className="text-slate-800">Branch:</strong>{' '}
+                {member.bankDetails?.branchName || '-'}
               </p>
             </div>
           </Card>
@@ -322,13 +338,15 @@ export const MemberDetailPage: React.FC<MemberDetailPageProps> = ({ memberId, on
             </div>
             <div className="space-y-2 text-xs text-slate-600">
               <p>
-                <strong className="text-slate-800">KYC Type:</strong> {member.kycType || '-'}
+                <strong className="text-slate-800">KYC Type:</strong>{' '}
+                {member.bankDetails?.kycType || '-'}
               </p>
+
               <p>
                 <strong className="text-slate-800">KYC Number:</strong>{' '}
-                {member.kycNumber || 'Not provided'}
+                {member.bankDetails?.kycNumber || 'Not provided'}
               </p>
-              <p>
+              {/* <p>
                 <strong className="text-slate-800">Verification Status:</strong>{' '}
                 <Badge
                   variant={
@@ -341,7 +359,7 @@ export const MemberDetailPage: React.FC<MemberDetailPageProps> = ({ memberId, on
                 >
                   {member.kycStatus || 'PENDING'}
                 </Badge>
-              </p>
+              </p> */}
             </div>
           </Card>
         </div>
@@ -551,7 +569,7 @@ export const MemberDetailPage: React.FC<MemberDetailPageProps> = ({ memberId, on
               <strong>Database Updated At:</strong> {formatDateTime(member.updatedAt)}
             </p>
             <p>
-              <strong>Account Active:</strong> {member.isActive ? 'true' : 'false'}
+              <strong>Account Active:</strong> {member.status ? 'true' : 'false'}
             </p>
           </div>
         </Card>
@@ -612,25 +630,140 @@ export const MemberDetailPage: React.FC<MemberDetailPageProps> = ({ memberId, on
               value={editFormData.state || ''}
               onChange={(e) => setEditFormData({ ...editFormData, state: e.target.value })}
             />
-            <Input
-              label="Bank Name"
-              value={editFormData.bankName || ''}
-              onChange={(e) => setEditFormData({ ...editFormData, bankName: e.target.value })}
-            />
-            <Input
-              label="Account Number"
-              value={editFormData.accountNumber || ''}
-              onChange={(e) => setEditFormData({ ...editFormData, accountNumber: e.target.value })}
-            />
-            <Input
-              label="IFSC Code"
-              value={editFormData.ifscCode || ''}
-              onChange={(e) => setEditFormData({ ...editFormData, ifscCode: e.target.value })}
-            />
+            {/* Nominee Details */}
+            <div className="col-span-2 border-t pt-3">
+              <h3 className="text-sm font-semibold mb-3">Nominee Details</h3>
+            </div>
+
             <Input
               label="Nominee Name"
-              value={editFormData.nomineeName || ''}
-              onChange={(e) => setEditFormData({ ...editFormData, nomineeName: e.target.value })}
+              value={editFormData.nomineeDetails?.name || ''}
+              onChange={(e) =>
+                setEditFormData({
+                  ...editFormData,
+                  nomineeDetails: {
+                    ...editFormData.nomineeDetails!,
+                    name: e.target.value,
+                  },
+                })
+              }
+            />
+
+            <Input
+              label="Nominee Relation"
+              value={editFormData.nomineeDetails?.relation || ''}
+              onChange={(e) =>
+                setEditFormData({
+                  ...editFormData,
+                  nomineeDetails: {
+                    ...editFormData.nomineeDetails!,
+                    relation: e.target.value,
+                  },
+                })
+              }
+            />
+
+            <Input
+              label="Nominee Phone"
+              value={editFormData.nomineeDetails?.phone || ''}
+              onChange={(e) =>
+                setEditFormData({
+                  ...editFormData,
+                  nomineeDetails: {
+                    ...editFormData.nomineeDetails!,
+                    phone: e.target.value,
+                  },
+                })
+              }
+            />
+
+            {/* Bank Details */}
+            <div className="col-span-2 border-t pt-3">
+              <h3 className="text-sm font-semibold mb-3">Bank Details</h3>
+            </div>
+
+            <Input
+              label="Bank Name"
+              value={editFormData.bankDetails?.bankName || ''}
+              onChange={(e) =>
+                setEditFormData({
+                  ...editFormData,
+                  bankDetails: {
+                    ...editFormData.bankDetails!,
+                    bankName: e.target.value,
+                  },
+                })
+              }
+            />
+
+            <Input
+              label="Account Number"
+              value={editFormData.bankDetails?.accountNumber || ''}
+              onChange={(e) =>
+                setEditFormData({
+                  ...editFormData,
+                  bankDetails: {
+                    ...editFormData.bankDetails!,
+                    accountNumber: e.target.value,
+                  },
+                })
+              }
+            />
+
+            <Input
+              label="IFSC Code"
+              value={editFormData.bankDetails?.ifscCode || ''}
+              onChange={(e) =>
+                setEditFormData({
+                  ...editFormData,
+                  bankDetails: {
+                    ...editFormData.bankDetails!,
+                    ifscCode: e.target.value,
+                  },
+                })
+              }
+            />
+
+            <Input
+              label="Branch Name"
+              value={editFormData.bankDetails?.branchName || ''}
+              onChange={(e) =>
+                setEditFormData({
+                  ...editFormData,
+                  bankDetails: {
+                    ...editFormData.bankDetails!,
+                    branchName: e.target.value,
+                  },
+                })
+              }
+            />
+
+            <Input
+              label="KYC Type"
+              value={editFormData.bankDetails?.kycType || ''}
+              onChange={(e) =>
+                setEditFormData({
+                  ...editFormData,
+                  bankDetails: {
+                    ...editFormData.bankDetails!,
+                    kycType: e.target.value,
+                  },
+                })
+              }
+            />
+
+            <Input
+              label="KYC Number"
+              value={editFormData.bankDetails?.kycNumber || ''}
+              onChange={(e) =>
+                setEditFormData({
+                  ...editFormData,
+                  bankDetails: {
+                    ...editFormData.bankDetails!,
+                    kycNumber: e.target.value,
+                  },
+                })
+              }
             />
           </div>
 
@@ -638,10 +771,16 @@ export const MemberDetailPage: React.FC<MemberDetailPageProps> = ({ memberId, on
             <input
               type="checkbox"
               id="edit-active"
-              checked={editFormData.isActive ?? true}
-              onChange={(e) => setEditFormData({ ...editFormData, isActive: e.target.checked })}
+              checked={editFormData.status === 'ACTIVE'}
+              onChange={(e) =>
+                setEditFormData({
+                  ...editFormData,
+                  status: e.target.checked ? 'ACTIVE' : 'INACTIVE',
+                })
+              }
               className="h-4 w-4 rounded border-slate-300"
             />
+
             <label htmlFor="edit-active" className="text-xs text-slate-700">
               Active Member Status
             </label>
