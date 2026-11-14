@@ -8,6 +8,7 @@ import {
   ApiLogin,
   ApiLogout,
   ApiResetPassword,
+  ApiRefreshToken,
   ApiSignup,
 } from './auth.swagger';
 import { CurrentUser } from './decorators/current-user.decorator';
@@ -52,6 +53,7 @@ export class AuthController {
     return this.authService.login(loginDto);
   }
 
+  @ApiRefreshToken()
   @Post('refresh')
   async refreshToken(
     @Body() dto: RefreshTokenDto,

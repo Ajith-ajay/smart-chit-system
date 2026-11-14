@@ -81,92 +81,117 @@ apiClient.interceptors.request.use(
   (error) => Promise.reject(error),
 );
 
-// Concurrency lock for token refreshing
-let isRefreshing = false;
-let failedQueue: Array<{
-  resolve: (value?: unknown) => void;
-  reject: (reason?: unknown) => void;
-}> = [];
+// A single refresh operation is shared by all requests that receive 401
+// while the refresh is in progress.
+interface RefreshResponseEnvelope {
+  data?: {
+    accessToken?: string;
+    refreshToken?: string;
+  };
+}
 
-const processQueue = (error: unknown, token: string | null = null) => {
-  failedQueue.forEach((prom) => {
-    if (error) {
-      prom.reject(error);
-    } else {
-      prom.resolve(token);
-    }
-  });
-  failedQueue = [];
-};
+let refreshPromise: Promise<string> | null = null;
+
+function dispatchAuthExpired(): void {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('scms:auth-expired'));
+  }
+}
+
+async function performTokenRefresh(): Promise<string> {
+  const refreshToken = getRefreshToken();
+
+  if (!refreshToken) {
+    throw new Error('No refresh token available');
+  }
+
+  // Use the raw Axios client to avoid recursively running this response
+  // interceptor for the refresh endpoint itself.
+  const response = await axios.post<RefreshResponseEnvelope>(
+    `${getApiBaseUrl()}/auth/refresh`,
+    { refreshToken },
+    {
+      headers: { 'Content-Type': 'application/json' },
+      timeout: 30000,
+    },
+  );
+
+  // Nest's global ResponseInterceptor wraps successful responses in { data }.
+  const tokens = response.data?.data;
+
+  if (
+    !tokens ||
+    typeof tokens.accessToken !== 'string' ||
+    typeof tokens.refreshToken !== 'string'
+  ) {
+    throw new Error('Invalid token refresh response');
+  }
+
+  setTokens(tokens.accessToken, tokens.refreshToken);
+  return tokens.accessToken;
+}
 
 apiClient.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
-    const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
+    const originalRequest = error.config as
+      (InternalAxiosRequestConfig & { _retry?: boolean }) | undefined;
 
-    // Handle 401 Unauthorized
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      // Don't attempt to refresh if the failed request was the login or refresh endpoint itself
-      const requestUrl = originalRequest.url || '';
-      if (requestUrl.includes('/auth/login') || requestUrl.includes('/auth/refresh')) {
-        return Promise.reject(error);
-      }
-
-      if (isRefreshing) {
-        return new Promise((resolve, reject) => {
-          failedQueue.push({ resolve, reject });
-        })
-          .then((token) => {
-            if (originalRequest.headers) {
-              originalRequest.headers.Authorization = `Bearer ${token}`;
-            }
-            return apiClient(originalRequest);
-          })
-          .catch((err) => Promise.reject(err));
-      }
-
-      originalRequest._retry = true;
-      isRefreshing = true;
-
-      const refreshToken = getRefreshToken();
-      if (!refreshToken) {
-        clearTokens();
-        isRefreshing = false;
-        window.dispatchEvent(new CustomEvent('scms:auth-expired'));
-        return Promise.reject(error);
-      }
-
-      try {
-        const refreshResponse = await axios.post(
-          `${getApiBaseUrl()}/auth/refresh`,
-          { refreshToken },
-          { headers: { 'Content-Type': 'application/json' } },
-        );
-
-        const newAccessToken = refreshResponse.data?.accessToken;
-        const newRefreshToken = refreshResponse.data?.refreshToken || refreshToken;
-
-        if (newAccessToken) {
-          setTokens(newAccessToken, newRefreshToken);
-          processQueue(null, newAccessToken);
-          if (originalRequest.headers) {
-            originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
-          }
-          return apiClient(originalRequest);
-        } else {
-          throw new Error('No access token returned in refresh response');
-        }
-      } catch (refreshErr) {
-        processQueue(refreshErr, null);
-        clearTokens();
-        window.dispatchEvent(new CustomEvent('scms:auth-expired'));
-        return Promise.reject(refreshErr);
-      } finally {
-        isRefreshing = false;
-      }
+    if (error.response?.status !== 401 || !originalRequest || originalRequest._retry) {
+      return Promise.reject(error);
     }
 
-    return Promise.reject(error);
+    const requestUrl = originalRequest.url ?? '';
+
+    // Never try to refresh authentication endpoints themselves.
+    if (
+      requestUrl.includes('/auth/login') ||
+      requestUrl.includes('/auth/refresh') ||
+      requestUrl.includes('/auth/logout')
+    ) {
+      return Promise.reject(error);
+    }
+
+    originalRequest._retry = true;
+
+    if (!getRefreshToken()) {
+      clearTokens();
+      dispatchAuthExpired();
+      return Promise.reject(error);
+    }
+
+    try {
+      if (!refreshPromise) {
+        refreshPromise = performTokenRefresh()
+          .catch((refreshError: unknown) => {
+            // Only expire the local session when the server explicitly
+            // rejects the refresh token. Network errors and 5xx responses
+            // should not destroy a potentially valid session.
+            if (
+              axios.isAxiosError(refreshError) &&
+              (refreshError.response?.status === 401 || refreshError.response?.status === 403)
+            ) {
+              clearTokens();
+              dispatchAuthExpired();
+            }
+
+            throw refreshError;
+          })
+          .finally(() => {
+            refreshPromise = null;
+          });
+      }
+
+      const newAccessToken = await refreshPromise;
+
+      if (originalRequest.headers) {
+        originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+      }
+
+      return apiClient(originalRequest);
+    } catch (refreshError) {
+      return Promise.reject(refreshError);
+    }
   },
 );
 

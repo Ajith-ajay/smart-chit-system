@@ -1,3 +1,4 @@
+import { createHash, timingSafeEqual } from 'node:crypto';
 import {
   BadRequestException,
   Injectable,
@@ -104,7 +105,7 @@ export class AuthService {
 
     const refreshToken = await this.tokenService.generateRefreshToken(payload);
 
-    const refreshTokenHash = await this.passwordService.hash(refreshToken, 12);
+    const refreshTokenHash = this.hashRefreshToken(refreshToken);
 
     await this.authRepository.updateRefreshTokenHash(user.id, refreshTokenHash);
 
@@ -258,16 +259,12 @@ export class AuthService {
 
     const user = await this.authRepository.findById(payload.sub);
 
-    if (!user || !user.refreshTokenHash) {
+    if (!user || !user.isActive || !user.refreshTokenHash) {
       throw new UnauthorizedException('Invalid refresh token');
     }
 
-    const matches = await this.passwordService.compare(
-      dto.refreshToken,
-      user.refreshTokenHash,
-    );
-
-    if (!matches) {
+    const currentRefreshTokenHash = user.refreshTokenHash;
+    if (!this.refreshTokenMatches(dto.refreshToken, currentRefreshTokenHash)) {
       throw new UnauthorizedException('Invalid refresh token');
     }
 
@@ -278,17 +275,44 @@ export class AuthService {
     };
 
     const accessToken = await this.tokenService.generateAccessToken(jwtPayload);
-
     const refreshToken =
       await this.tokenService.generateRefreshToken(jwtPayload);
+    const nextRefreshTokenHash = this.hashRefreshToken(refreshToken);
 
-    const refreshTokenHash = await this.passwordService.hash(refreshToken, 12);
+    // Compare-and-swap prevents two concurrent requests from rotating the
+    // same refresh token successfully.
+    const rotated = await this.authRepository.rotateRefreshTokenHash(
+      user.id,
+      currentRefreshTokenHash,
+      nextRefreshTokenHash,
+    );
 
-    await this.authRepository.updateRefreshTokenHash(user.id, refreshTokenHash);
+    if (!rotated) {
+      throw new UnauthorizedException('Refresh token has already been used');
+    }
 
     return {
       accessToken,
       refreshToken,
     };
+  }
+
+  /**
+   * JWTs are high-entropy tokens, so SHA-256 is appropriate for storing their
+   * digest. Do not use bcrypt here: bcrypt truncates inputs beyond 72 bytes,
+   * while JWT refresh tokens are typically much longer.
+   */
+  private hashRefreshToken(token: string): string {
+    return createHash('sha256').update(token).digest('hex');
+  }
+
+  private refreshTokenMatches(token: string, storedHash: string): boolean {
+    const candidate = Buffer.from(this.hashRefreshToken(token), 'hex');
+    const expected = Buffer.from(storedHash, 'hex');
+
+    return (
+      candidate.length === expected.length &&
+      timingSafeEqual(candidate, expected)
+    );
   }
 }

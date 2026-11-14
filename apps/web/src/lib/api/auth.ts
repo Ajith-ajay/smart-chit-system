@@ -21,10 +21,11 @@ export const authApi = {
     return res.data?.data;
   },
 
-  refresh: async (
-    refreshToken: string,
-  ): Promise<{ accessToken: string; refreshToken?: string }> => {
-    const res = await apiClient.post('/auth/refresh', { refreshToken });
+  refresh: async (refreshToken: string): Promise<{ accessToken: string; refreshToken: string }> => {
+    const res = await apiClient.post<ApiResponse<{ accessToken: string; refreshToken: string }>>(
+      '/auth/refresh',
+      { refreshToken },
+    );
     return res.data.data;
   },
 
@@ -37,8 +38,8 @@ export const authApi = {
   },
 
   getMe: async (): Promise<User> => {
-    const res = await apiClient.get<User>('/auth/me');
-    return res.data;
+    const res = await apiClient.get<ApiResponse<User>>('/auth/me');
+    return res.data.data;
   },
 
   changePassword: async (dto: ChangePasswordDto): Promise<{ message?: string }> => {

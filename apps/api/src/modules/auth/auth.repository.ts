@@ -41,6 +41,31 @@ export class AuthRepository {
     });
   }
 
+  /**
+   * Atomically rotates a refresh-token hash.
+   *
+   * The old hash is part of the WHERE clause, so only one concurrent
+   * refresh request can replace a given token.
+   */
+  async rotateRefreshTokenHash(
+    userId: string,
+    currentHash: string,
+    nextHash: string,
+  ): Promise<boolean> {
+    const result = await this.prisma.user.updateMany({
+      where: {
+        id: userId,
+        refreshTokenHash: currentHash,
+        isActive: true,
+      },
+      data: {
+        refreshTokenHash: nextHash,
+      },
+    });
+
+    return result.count === 1;
+  }
+
   async changePassword(userId: string, passwordHash: string) {
     return this.prisma.user.update({
       where: {
