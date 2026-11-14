@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
@@ -14,7 +15,7 @@ export class TokenService {
 
   async generateAccessToken(payload: JwtPayload) {
     return this.signToken(
-      payload,
+      { ...payload, type: 'access' },
       this.config.getOrThrow<string>('jwt.accessSecret'),
       this.config.getOrThrow<string>('jwt.accessExpiresIn'),
     );
@@ -22,7 +23,7 @@ export class TokenService {
 
   async generateRefreshToken(payload: JwtPayload) {
     return this.signToken(
-      payload,
+      { ...payload, type: 'refresh', jti: randomUUID() },
       this.config.getOrThrow<string>('jwt.refreshSecret'),
       this.config.getOrThrow<string>('jwt.refreshExpiresIn'),
     );
@@ -63,8 +64,21 @@ export class TokenService {
   }
 
   async verifyRefreshToken(token: string): Promise<JwtPayload> {
-    return this.jwtService.verifyAsync<JwtPayload>(token, {
-      secret: this.config.getOrThrow<string>('jwt.refreshSecret'),
-    });
+    const secret = this.config.getOrThrow<string>('jwt.refreshSecret');
+    let payload: JwtPayload;
+
+    try {
+      payload = await this.jwtService.verifyAsync<JwtPayload>(token, {
+        secret,
+      });
+    } catch {
+      throw new UnauthorizedException('Invalid or expired refresh token');
+    }
+
+    if (payload.type !== 'refresh' || !payload.sub) {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
+
+    return payload;
   }
 }

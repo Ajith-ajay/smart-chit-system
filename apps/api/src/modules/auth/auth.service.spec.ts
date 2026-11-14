@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { createHash } from 'node:crypto';
 
 import { ConfigService } from '@nestjs/config';
 
@@ -16,6 +17,7 @@ describe('AuthService', () => {
     findByEmail: jest.fn(),
     findById: jest.fn(),
     updateRefreshTokenHash: jest.fn(),
+    rotateRefreshTokenHash: jest.fn(),
     createPasswordResetToken: jest.fn(),
     deletePasswordResetTokens: jest.fn(),
     findPasswordResetToken: jest.fn(),
@@ -85,5 +87,80 @@ describe('AuthService', () => {
 
   it('should be defined', () => {
     expect(service).toBeDefined();
+  });
+
+  describe('refreshToken', () => {
+    const currentRefreshToken = 'current-refresh-token';
+    const currentHash = createHash('sha256')
+      .update(currentRefreshToken)
+      .digest('hex');
+
+    const user = {
+      id: 'user-1',
+      email: 'admin@example.com',
+      role: 'ADMIN',
+      isActive: true,
+      refreshTokenHash: currentHash,
+    };
+
+    beforeEach(() => {
+      tokenService.verifyRefreshToken.mockResolvedValue({
+        sub: user.id,
+        email: user.email,
+        role: user.role,
+        type: 'refresh',
+      });
+      authRepository.findById.mockResolvedValue(user);
+      tokenService.generateAccessToken.mockResolvedValue('new-access-token');
+      tokenService.generateRefreshToken.mockResolvedValue('new-refresh-token');
+      authRepository.rotateRefreshTokenHash.mockResolvedValue(true);
+    });
+
+    it('verifies and rotates the refresh token', async () => {
+      await expect(
+        service.refreshToken({ refreshToken: currentRefreshToken }),
+      ).resolves.toEqual({
+        accessToken: 'new-access-token',
+        refreshToken: 'new-refresh-token',
+      });
+
+      expect(tokenService.verifyRefreshToken).toHaveBeenCalledWith(
+        'current-refresh-token',
+      );
+      expect(authRepository.rotateRefreshTokenHash).toHaveBeenCalledWith(
+        user.id,
+        currentHash,
+        createHash('sha256').update('new-refresh-token').digest('hex'),
+      );
+    });
+
+    it('rejects an inactive account', async () => {
+      authRepository.findById.mockResolvedValue({
+        ...user,
+        isActive: false,
+      });
+
+      await expect(
+        service.refreshToken({ refreshToken: 'current-refresh-token' }),
+      ).rejects.toThrow('Invalid refresh token');
+
+      expect(authRepository.rotateRefreshTokenHash).not.toHaveBeenCalled();
+    });
+
+    it('rejects a refresh token that does not match the stored hash', async () => {
+      await expect(
+        service.refreshToken({ refreshToken: 'reused-refresh-token' }),
+      ).rejects.toThrow('Invalid refresh token');
+
+      expect(authRepository.rotateRefreshTokenHash).not.toHaveBeenCalled();
+    });
+
+    it('rejects a concurrent refresh when another request already rotated the token', async () => {
+      authRepository.rotateRefreshTokenHash.mockResolvedValue(false);
+
+      await expect(
+        service.refreshToken({ refreshToken: 'current-refresh-token' }),
+      ).rejects.toThrow('Refresh token has already been used');
+    });
   });
 });

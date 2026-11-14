@@ -11,11 +11,13 @@ import { ChangePasswordDto } from './dto/requests/change-password.dto';
 import { ForgotPasswordDto } from './dto/requests/forgot-password.dto';
 import { LoginDto } from './dto/requests/login.dto';
 import { ResetPasswordDto } from './dto/requests/reset-password.dto';
+import { RefreshTokenDto } from './dto/requests/refresh-token.dto';
 import { SignupDto } from './dto/requests/signup.dto';
 import { ForgotPasswordResponseDto } from './dto/responses/forgot-password.response.dto';
 import { LoginResponseDto } from './dto/responses/login.response.dto';
 import { LogoutResponseDto } from './dto/responses/logout.response.dto';
 import { ResetPasswordResponseDto } from './dto/responses/reset-password.response.dto';
+import { RefreshTokenResponseDto } from './dto/responses/refresh-token.response.dto';
 
 export function ApiSignup() {
   return applyDecorators(
@@ -111,6 +113,25 @@ export function ApiChangePassword() {
     }),
     ApiBody({
       type: ChangePasswordDto,
+    }),
+  );
+}
+
+export function ApiRefreshToken() {
+  return applyDecorators(
+    ApiOperation({
+      summary: 'Refresh access and refresh tokens',
+      description:
+        'Exchange a valid refresh token for a new access token and a rotated refresh token.',
+    }),
+    ApiBody({
+      type: RefreshTokenDto,
+    }),
+    ApiOkResponse({
+      type: RefreshTokenResponseDto,
+    }),
+    ApiUnauthorizedResponse({
+      description: 'Refresh token is invalid, expired, or already used.',
     }),
   );
 }
